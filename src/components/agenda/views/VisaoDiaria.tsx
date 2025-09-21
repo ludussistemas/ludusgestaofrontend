@@ -123,9 +123,9 @@ function AgendaEvent({ evento, style, onClick }: { evento: Evento; style?: React
       }}
       onClick={onClick}
     >
-      <div className="font-medium truncate">{evento.cliente}</div>
-      <div className="truncate">{evento.horaInicio} - {evento.horaFim}</div>
-      {evento.modalidade && <div className="truncate text-xs opacity-90">{evento.modalidade}</div>}
+      <div className="font-medium truncate">{evento.cliente?.nome || 'Cliente não informado'}</div>
+      <div className="truncate">{evento.dataInicio?.split('T')[1]?.substring(0, 5) || ''} - {evento.dataFim?.split('T')[1]?.substring(0, 5) || ''}</div>
+      {evento.esporte && <div className="truncate text-xs opacity-90">{evento.esporte}</div>}
     </div>
   );
 }
@@ -201,8 +201,10 @@ const VisaoDiaria = memo(() => {
 
   // Posição do evento
   const getEventPosition = (event: Evento) => {
-    const startMinutes = timeToMinutes(event.horaInicio);
-    const endMinutes = timeToMinutes(event.horaFim);
+    const startTime = event.dataInicio?.split('T')[1]?.substring(0, 5) || '';
+    const endTime = event.dataFim?.split('T')[1]?.substring(0, 5) || '';
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
     const duration = endMinutes - startMinutes;
     
     const firstSlotMinutes = timeToMinutes(timeSlots[0]);

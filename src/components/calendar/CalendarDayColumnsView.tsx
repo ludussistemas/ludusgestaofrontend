@@ -1,9 +1,22 @@
 
 import { Card, CardContent } from '@/components/ui/card';
-import { Reservation } from '@/hooks/useCalendar';
 import { useLocais } from '@/hooks/useLocais';
-import { useVenueSettings } from '@/hooks/useVenueSettings';
 import { Plus, User } from 'lucide-react';
+// Interface temporária para Reservation
+interface Reservation {
+  id: string;
+  client: string;
+  venue: string;
+  venueId: string;
+  startTime: string;
+  endTime: string;
+  start: string;
+  status: string;
+  color: string;
+  sport: string;
+  notes: string;
+  title: string;
+}
 
 interface CalendarDayColumnsViewProps {
   currentDate: Date;
@@ -19,11 +32,10 @@ const CalendarDayColumnsView = ({
   handleEventClick
 }: CalendarDayColumnsViewProps) => {
   
-  const { generateTimeSlots } = useVenueSettings();
-  const { locais, getLocalById } = useLocais();
+  const { generateTimeSlots, data: locais, getLocalById } = useLocais();
   
   // Usar o menor intervalo entre todos os locais para a timeline
-  const smallestInterval = Math.min(...locais.map(local => local.interval));
+  const smallestInterval = Math.min(...locais.map(local => local.intervalo));
   
   // Gerar slots usando o menor intervalo calculado
   const timeSlots = generateTimeSlots('custom', 7, 21, smallestInterval);

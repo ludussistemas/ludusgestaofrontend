@@ -4,7 +4,7 @@ import { useBaseCrud } from '../core/hooks/useBaseCrud';
 import { api, ApiResponse } from '../lib/api';
 
 export const useUsuarios = () => {
-  const baseHook = useBaseCrud<Usuario>('/api/usuarios', {
+  const baseHook = useBaseCrud<Usuario>('usuarios', {
     transformData: (data) => data,
     transformPagination: (pagination) => pagination
   });
@@ -24,7 +24,7 @@ export const useUsuarios = () => {
     try {
       const loadingToast = toast.loading('Criando usuário...');
       
-      const response = await api.post<ApiResponse<Usuario>>('/api/usuarios', usuarioData);
+      const response = await api.post<ApiResponse<Usuario>>('usuarios', usuarioData);
       
       toast.dismiss(loadingToast);
 
@@ -50,7 +50,7 @@ export const useUsuarios = () => {
     try {
       const loadingToast = toast.loading('Atualizando usuário...');
       
-      const response = await api.put<ApiResponse<Usuario>>(`/api/usuarios/${id}`, usuarioData);
+      const response = await api.put<ApiResponse<Usuario>>(`usuarios/${id}`, usuarioData);
       
       toast.dismiss(loadingToast);
 

@@ -24,12 +24,12 @@ function AgendaEvent({ evento, onClick }: { evento: Evento; onClick: (e: React.M
         
         {/* Informações do evento */}
         <div className="flex flex-col">
-          <div className="font-medium text-sm">{evento.cliente}</div>
+          <div className="font-medium text-sm">{evento.cliente?.nome || 'Cliente não informado'}</div>
           <div className="text-xs text-muted-foreground">
-            {evento.horaInicio} - {evento.horaFim}
+            {evento.dataInicio?.split('T')[1]?.substring(0, 5) || ''} - {evento.dataFim?.split('T')[1]?.substring(0, 5) || ''}
           </div>
-          {evento.modalidade && (
-            <div className="text-xs text-muted-foreground">{evento.modalidade}</div>
+          {evento.esporte && (
+            <div className="text-xs text-muted-foreground">{evento.esporte}</div>
           )}
         </div>
       </div>
@@ -37,10 +37,12 @@ function AgendaEvent({ evento, onClick }: { evento: Evento; onClick: (e: React.M
       {/* Status e data */}
       <div className="flex flex-col items-end space-y-1">
         <Badge variant="secondary" className="text-xs">
-          {evento.status}
+          {evento.situacao === 1 ? 'Pendente' : 
+           evento.situacao === 2 ? 'Confirmada' : 
+           evento.situacao === 3 ? 'Cancelada' : 'Concluída'}
         </Badge>
         <div className="text-xs text-muted-foreground">
-          {format(parseISO(evento.data), 'dd/MM/yyyy')}
+          {format(parseISO(evento.dataInicio), 'dd/MM/yyyy')}
         </div>
       </div>
     </div>

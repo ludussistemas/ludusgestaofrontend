@@ -2,6 +2,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { MODULE_COLORS } from '@/constants/moduleColors';
+import { usePermissoesUsuario } from '@/contexts/PermissoesUsuarioContext';
 import { Listagem } from '@/core/components/listagem';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { Usuario } from '@/types/usuario';
@@ -11,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 const Usuarios = () => {
   const navigate = useNavigate();
   const usuariosHook = useUsuarios();
+  const { hasUsuariosAccess, hasGrupoPermissoesAccess } = usePermissoesUsuario();
 
   const colunas = [
     {
@@ -22,14 +24,14 @@ const Usuarios = () => {
       renderizar: (usuario: Usuario) => (
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10">
-            <AvatarImage src={usuario.foto} />
+            <AvatarImage src="" />
             <AvatarFallback>
               <User className="h-5 w-5" />
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="font-medium">{usuario.nome}</div>
-            <div className="text-sm text-muted-foreground">{usuario.cargo}</div>
+            <div className="text-sm text-muted-foreground">{usuario.email}</div>
           </div>
         </div>
       ),
@@ -45,7 +47,7 @@ const Usuarios = () => {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Phone className="h-3 w-3 text-muted-foreground" />
-            <span>{usuario.telefone}</span>
+            <span>N/A</span>
           </div>
         </div>
       ),
@@ -59,7 +61,7 @@ const Usuarios = () => {
       renderizar: (usuario: Usuario) => (
         <div className="flex items-center gap-2">
           <Building className="h-4 w-4 text-muted-foreground" />
-          <span>{usuario.filial?.nome || 'N/A'}</span>
+          <span>N/A</span>
         </div>
       ),
     },
@@ -72,15 +74,7 @@ const Usuarios = () => {
       renderizar: (usuario: Usuario) => {
         return (
           <div className="flex items-center gap-2">
-            {usuario.grupo && (
-              <>
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: usuario.grupo?.cor || '#888' }}
-                />
-                <span>{usuario.grupo?.nome || 'N/A'}</span>
-              </>
-            )}
+            <span>N/A</span>
           </div>
         );
       },
@@ -92,8 +86,8 @@ const Usuarios = () => {
       filtravel: true,
       tipoFiltro: 'select' as const,
       renderizar: (usuario: Usuario) => (
-        <Badge variant={usuario.ativo ? 'default' : 'secondary'}>
-          {usuario.ativo ? 'Ativo' : 'Inativo'}
+        <Badge variant={usuario.situacao === 1 ? 'default' : 'secondary'}>
+          {usuario.situacao === 1 ? 'Ativo' : usuario.situacao === 2 ? 'Inativo' : 'Bloqueado'}
         </Badge>
       ),
     },
@@ -103,25 +97,25 @@ const Usuarios = () => {
       ordenavel: true,
       renderizar: (usuario: Usuario) => (
         <span className="text-sm text-muted-foreground">
-          {usuario.ultimoAcesso || 'Nunca'}
+          N/A
         </span>
       ),
     },
   ];
 
   const acoes = [
-    {
+    ...(hasUsuariosAccess() ? [{
       titulo: 'Editar',
       icone: <Settings className="h-4 w-4" />,
       onClick: (usuario: Usuario) => navigate(`/configuracoes/usuarios/${usuario.id}/editar`),
       variante: 'outline' as const,
-    },
-    {
+    }] : []),
+    ...(hasGrupoPermissoesAccess() ? [{
       titulo: 'Permissões',
       icone: <Shield className="h-4 w-4" />,
       onClick: (usuario: Usuario) => navigate(`/configuracoes/usuarios/${usuario.id}/permissoes`),
       variante: 'outline' as const,
-    },
+    }] : []),
   ];
 
   const cardsResumo = [
@@ -133,19 +127,19 @@ const Usuarios = () => {
     },
     {
       titulo: 'Usuários Ativos',
-      valor: (data: Usuario[] = []) => Array.isArray(data) ? data.filter(u => u.ativo).length : 0,
+      valor: (data: Usuario[] = []) => Array.isArray(data) ? data.filter(u => u.situacao === 1).length : 0,
       icone: UserCheck,
       cor: 'bg-green-500',
     },
     {
       titulo: 'Usuários Inativos',
-      valor: (data: Usuario[] = []) => Array.isArray(data) ? data.filter(u => !u.ativo).length : 0,
+      valor: (data: Usuario[] = []) => Array.isArray(data) ? data.filter(u => u.situacao === 2).length : 0,
       icone: UserX,
       cor: 'bg-red-500',
     },
     {
       titulo: 'Com Último Acesso',
-      valor: (data: Usuario[] = []) => Array.isArray(data) ? data.filter(u => u.ultimoAcesso).length : 0,
+      valor: (data: Usuario[] = []) => Array.isArray(data) ? data.length : 0,
       icone: User,
       cor: 'bg-purple-500',
     },
@@ -164,17 +158,17 @@ const Usuarios = () => {
       hook={usuariosHook}
       colunas={colunas}
       acoes={acoes}
-      botaoCriar={{
+      botaoCriar={hasUsuariosAccess() ? {
         titulo: "Novo Usuário",
         icone: <Plus className="h-4 w-4" />,
         rota: "/configuracoes/usuarios/novo"
-      }}
+      } : undefined}
       cardsResumo={cardsResumo}
       mostrarExportar={true}
       nomeArquivoExportar="usuarios"
       ordenacaoPadrao="nome"
       tamanhoPaginaPadrao={20}
-      camposBusca={['nome', 'email', 'cargo']}
+      camposBusca={['nome', 'email']}
       placeholderBusca="Buscar usuário..."
     />
   );

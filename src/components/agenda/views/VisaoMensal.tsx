@@ -107,8 +107,8 @@ function AgendaEvent({ evento, onClick }: { evento: Evento; onClick: (e: React.M
       onClick={onClick}
     >
       <div className="flex items-center justify-between w-full">
-        <div className="font-semibold truncate text-[10px] leading-tight flex-1 mr-1 text-white">{evento.cliente}</div>
-        <div className="text-[9px] font-medium leading-tight flex-shrink-0 text-white">{evento.horaInicio}-{evento.horaFim}</div>
+        <div className="font-semibold truncate text-[10px] leading-tight flex-1 mr-1 text-white">{evento.cliente?.nome || 'Cliente não informado'}</div>
+        <div className="text-[9px] font-medium leading-tight flex-shrink-0 text-white">{evento.dataInicio?.split('T')[1]?.substring(0, 5) || ''}-{evento.dataFim?.split('T')[1]?.substring(0, 5) || ''}</div>
       </div>
     </div>
   );

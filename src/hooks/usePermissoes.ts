@@ -3,7 +3,7 @@ import { api, ApiResponse } from '../lib/api';
 import { Permissao } from '../types/permissao';
 
 export const usePermissoes = () => {
-  const baseHook = useBaseCrud<Permissao>('/api/permissoes');
+  const baseHook = useBaseCrud<Permissao>('permissoes');
 
   const getPermissaoById = (id: string) => {
     if (!Array.isArray(baseHook.data)) return undefined;
@@ -12,7 +12,7 @@ export const usePermissoes = () => {
 
   const getPermissoesForSearch = async () => {
     try {
-      const response = await api.get<ApiResponse<Permissao[]>>('/api/permissoes', { limit: 100 });
+      const response = await api.get<ApiResponse<Permissao[]>>('permissoes', { pageSize: 100 });
       return (response.data || []).map(permissao => ({
         id: permissao.id,
         nome: permissao.nome,
@@ -26,7 +26,7 @@ export const usePermissoes = () => {
 
   const getModulosPai = async () => {
     try {
-      const response = await api.get<ApiResponse<string[]>>('/api/permissoes/modulos-pai');
+      const response = await api.get<ApiResponse<string[]>>('permissoes/modulos-pai');
       return response.data || [];
     } catch (error) {
       console.error('Erro ao buscar módulos pai:', error);
@@ -36,7 +36,7 @@ export const usePermissoes = () => {
 
   const getSubmodulos = async () => {
     try {
-      const response = await api.get<ApiResponse<string[]>>('/api/permissoes/submodulos');
+      const response = await api.get<ApiResponse<string[]>>('permissoes/submodulos');
       return response.data || [];
     } catch (error) {
       console.error('Erro ao buscar submódulos:', error);

@@ -8,12 +8,9 @@ export type StatusRecebivel = 'pendente' | 'pago' | 'vencido';
 
 export interface Recebivel {
   id: string; // GUID
-  cliente: string;
-  clienteId: string;
-  descricao: string;
+  reservaId: string;
   valor: number;
   dataVencimento: string;
   situacao: SituacaoRecebivel; // Enum do backend
-  reservaId: string | null; // Padronizado com backend
   dataCriacao: string; // Padronizado com backend
 } 

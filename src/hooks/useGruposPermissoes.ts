@@ -4,7 +4,7 @@ import { GrupoPermissao } from '@/types/grupo-permissao';
 import { toast } from 'sonner';
 
 export const useGruposPermissoes = () => {
-  const baseHook = useBaseCrud<GrupoPermissao>('/api/grupos-permissoes');
+  const baseHook = useBaseCrud<GrupoPermissao>('grupos-permissoes');
 
   const getGrupoById = (id: string) => {
     if (!Array.isArray(baseHook.data)) return undefined;

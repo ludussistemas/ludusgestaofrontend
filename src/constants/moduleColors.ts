@@ -6,6 +6,7 @@ export const MODULE_COLORS = {
   school: 'rgb(var(--module-school))', // Violet
   financial: 'rgb(var(--module-financial))', // Red
   settings: 'rgb(var(--module-settings))', // Gray
+  configuracoes: 'rgb(var(--module-settings))', // Gray (mesmo que settings)
   reports: '#06b6d4', // Cyan
 } as const;
 

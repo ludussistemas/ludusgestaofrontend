@@ -1,20 +1,22 @@
 
+import FilialSelector from '@/components/FilialSelector';
 import ModuleHeader from '@/components/ModuleHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { MODULE_COLORS } from '@/constants/moduleColors';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePermissoesUsuario } from '@/contexts/PermissoesUsuarioContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
-import { BarChart3, Calendar, HomeIcon, Moon, Settings, Sun, Users2, Building2 } from 'lucide-react';
+import { BarChart3, Building2, Calendar, HomeIcon, Moon, Settings, Sun, Users2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import FilialSelector from '@/components/FilialSelector';
 
 const Inicio = () => {
   const navigate = useNavigate();
-  const { user, empresa, filialAtual, logout, hasModuleAccess } = useAuth();
+  const { user, empresa, filialAtual, logout } = useAuth();
+  const { hasModuleAccess, hasConfiguracoesAccess } = usePermissoesUsuario();
   const { theme, toggleTheme } = useTheme();
   const { goBack } = useNavigationHistory();
 
@@ -25,7 +27,7 @@ const Inicio = () => {
 
   const modules = [
     {
-      id: 'events',
+      id: 'Eventos',
       title: 'Eventos',
       description: 'Gerencie reservas esportivas, locais, agendas e análises financeiras',
       icon: Calendar,
@@ -41,7 +43,7 @@ const Inicio = () => {
       path: '/eventos'
     },
     {
-      id: 'bar',
+      id: 'Bar',
       title: 'Bar',
       description: 'Controle completo do bar, estoque, comandas e caixa',
       icon: BarChart3,
@@ -57,7 +59,7 @@ const Inicio = () => {
       path: '/bar'
     },
     {
-      id: 'school',
+      id: 'Escolinha',
       title: 'Escola',
       description: 'Gestão completa de alunos, mensalidades e turmas',
       icon: Users2,
@@ -73,7 +75,7 @@ const Inicio = () => {
       path: '/escolinha'
     },
     {
-      id: 'financial',
+      id: 'Financeiro',
       title: 'Financeiro',
       description: 'Controle financeiro completo da empresa',
       icon: BarChart3,
@@ -148,19 +150,25 @@ const Inicio = () => {
             
             {/* Botão de Configurações */}
             <Button
-              onClick={() => navigate('/configuracoes')}
+              onClick={() => hasConfiguracoesAccess() && navigate('/configuracoes')}
               variant="outline"
-              className="gap-2"
+              className={`gap-2 ${!hasConfiguracoesAccess() ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!hasConfiguracoesAccess()}
             >
               <Settings className="h-4 w-4" />
               Configurações
+              {!hasConfiguracoesAccess() && (
+                <Badge className="ml-1 bg-red-500 text-white text-xs">
+                  Sem Permissão
+                </Badge>
+              )}
             </Button>
           </div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-8">
           {modules.map((module) => {
-            const hasAccess = hasModuleAccess(module.id as 'events' | 'bar' | 'school' | 'financial');
+            const hasAccess = hasModuleAccess(module.id);
             const IconComponent = module.icon;
 
             return (

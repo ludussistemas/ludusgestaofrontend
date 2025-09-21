@@ -1,8 +1,19 @@
 import ModuleHeader from '@/components/ModuleHeader';
+import { TourStep } from '@/components/PageTour';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
-import React from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+
+interface FormSection {
+  id: string;
+  title: string;
+  alwaysOpen?: boolean;
+  defaultOpen?: boolean;
+  content: React.ReactNode;
+}
 
 interface BaseFormPageProps {
   title: string;
@@ -12,8 +23,10 @@ interface BaseFormPageProps {
   backTo?: string;
   backLabel?: string;
   children?: React.ReactNode;
+  formSections?: FormSection[];
   onSubmit: (e: React.FormEvent) => void;
   submitLabel: string;
+  tourSteps?: TourStep[];
 }
 
 const BaseFormPage: React.FC<BaseFormPageProps> = ({
@@ -24,10 +37,27 @@ const BaseFormPage: React.FC<BaseFormPageProps> = ({
   backTo,
   backLabel,
   children,
+  formSections,
   onSubmit,
-  submitLabel
+  submitLabel,
+  tourSteps
 }) => {
   const { goBack } = useNavigationHistory();
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    new Set(formSections?.filter(s => s.alwaysOpen || s.defaultOpen).map(s => s.id) || [])
+  );
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -52,7 +82,46 @@ const BaseFormPage: React.FC<BaseFormPageProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="p-8">
-              {children}
+              {formSections ? (
+                <div className="space-y-6">
+                  {formSections.map((section) => (
+                    <Collapsible
+                      key={section.id}
+                      open={openSections.has(section.id)}
+                      onOpenChange={() => !section.alwaysOpen && toggleSection(section.id)}
+                    >
+                      <Card data-card={section.id} className="border">
+                        <CollapsibleTrigger
+                          className="w-full"
+                          disabled={section.alwaysOpen}
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                {section.title}
+                              </CardTitle>
+                              {!section.alwaysOpen && (
+                                openSections.has(section.id) ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )
+                              )}
+                            </div>
+                          </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="pt-0">
+                            {section.content}
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  ))}
+                </div>
+              ) : (
+                children
+              )}
             </CardContent>
           </Card>
           

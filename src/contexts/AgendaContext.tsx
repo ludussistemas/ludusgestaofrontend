@@ -10,6 +10,8 @@ export function ProvedorAgenda({ children }: { children: React.ReactNode }) {
 
 export function useContextoAgenda() {
   const ctx = useContext(ContextoAgenda);
-  if (!ctx) throw new Error('useContextoAgenda deve ser usado dentro de <ProvedorAgenda>');
+  if (!ctx) {
+    throw new Error('useContextoAgenda deve ser usado dentro de <ProvedorAgenda>');
+  }
   return ctx;
 } 

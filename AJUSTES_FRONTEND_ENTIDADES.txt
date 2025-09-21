@@ -1,0 +1,250 @@
+================================================================================
+                    DOCUMENTAÇÃO DE AJUSTES - FRONTEND
+                    Sincronização com Backend Ludus Gestão
+================================================================================
+
+🎯 OBJETIVO:
+Sincronizar as entidades do frontend com o backend, removendo campos 
+desnecessários e ajustando enums para manter consistência total.
+
+================================================================================
+📋 ENTIDADE: CLIENTE
+================================================================================
+
+❌ CAMPOS A REMOVER do Frontend:
+┌─────────────┬─────────────────────────────────────────────────────────────┐
+│ Campo       │ Motivo                                                      │
+├─────────────┼─────────────────────────────────────────────────────────────┤
+│ subtitulo   │ Campo não existe no backend e não é necessário             │
+└─────────────┴─────────────────────────────────────────────────────────────┘
+
+✅ ESTRUTURA FINAL:
+interface Cliente {
+  id: string;
+  nome: string;
+  documento: string;
+  email: string;
+  telefone: string;
+  endereco: string;
+  observacoes: string;
+  situacao: SituacaoCliente;
+  dataCriacao: string;
+}
+
+================================================================================
+🏢 ENTIDADE: LOCAL
+================================================================================
+
+❌ CAMPOS A REMOVER do Frontend:
+┌─────────────┬─────────────────────────────────────────────────────────────┐
+│ Campo       │ Motivo                                                      │
+├─────────────┼─────────────────────────────────────────────────────────────┤
+│ subtitulo   │ Campo não existe no backend e não é necessário             │
+└─────────────┴─────────────────────────────────────────────────────────────┘
+
+✅ ESTRUTURA FINAL:
+interface Local {
+  id: string;
+  nome: string;
+  tipo: TipoLocal;
+  intervalo: number;
+  valorHora: number;
+  capacidade: number;
+  descricao: string;
+  situacao: SituacaoLocal;
+  dataCriacao: string;
+}
+
+================================================================================
+📅 ENTIDADE: RESERVA
+================================================================================
+
+❌ CAMPOS A REMOVER do Frontend:
+┌─────────────┬─────────────────────────────────────────────────────────────┐
+│ Campo       │ Motivo                                                      │
+├─────────────┼─────────────────────────────────────────────────────────────┤
+│ (nenhum)    │ Todos os campos atuais devem ser mantidos                   │
+└─────────────┴─────────────────────────────────────────────────────────────┘
+
+✅ NOVOS CAMPOS A ADICIONAR no Backend:
+┌─────────────┬─────────────────────────────────────────────────────────────┐
+│ Campo       │ Descrição                                                   │
+├─────────────┼─────────────────────────────────────────────────────────────┤
+│ cor         │ Cor do local informado na reserva (buscar do Local)        │
+│ esporte     │ Tipo de esporte da reserva                                  │
+└─────────────┴─────────────────────────────────────────────────────────────┘
+
+✅ ESTRUTURA FINAL:
+interface Reserva {
+  id: string;
+  clienteId: string;
+  localId: string;
+  dataInicio: string;
+  dataFim: string;
+  situacao: SituacaoReserva;
+  valor: number;
+  observacoes: string;
+  dataCriacao: string;
+  cor: string;           // NOVO - buscar do Local
+  esporte: string;       // NOVO - tipo de esporte
+}
+
+================================================================================
+📊 ENTIDADE: RECEBÍVEL
+================================================================================
+
+✅ ESTRUTURA FINAL (sem alterações):
+interface Recebivel {
+  id: string;
+  reservaId: string;
+  valor: number;
+  dataVencimento: string;
+  situacao: SituacaoRecebivel;
+  dataCriacao: string;
+}
+
+================================================================================
+🏢 ENTIDADE: EMPRESA
+================================================================================
+
+✅ ESTRUTURA FINAL (sem alterações):
+interface Empresa {
+  id: string;
+  nome: string;
+  documento: string;
+  endereco: string;
+  telefone: string;
+  email: string;
+  dataCriacao: string;
+}
+
+================================================================================
+🏪 ENTIDADE: FILIAL
+================================================================================
+
+✅ ESTRUTURA FINAL (sem alterações):
+interface Filial {
+  id: string;
+  empresaId: string;
+  nome: string;
+  endereco: string;
+  telefone: string;
+  email: string;
+  dataCriacao: string;
+}
+
+================================================================================
+👤 ENTIDADE: USUÁRIO
+================================================================================
+
+✅ ESTRUTURA FINAL (sem alterações):
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  senha: string;
+  situacao: SituacaoUsuario;
+  dataCriacao: string;
+}
+
+================================================================================
+📊 ENUMS - PADRÃO BACKEND
+================================================================================
+
+⚠️ IMPORTANTE: Todos os enums devem seguir EXATAMENTE o padrão do backend!
+
+✅ SITUAÇÃO CLIENTE:
+enum SituacaoCliente {
+  Ativo = 1,
+  Inativo = 2,
+  Suspenso = 3
+}
+
+✅ SITUAÇÃO LOCAL:
+enum SituacaoLocal {
+  Ativo = 1,
+  Inativo = 2,
+  Manutencao = 3
+}
+
+✅ SITUAÇÃO RESERVA:
+enum SituacaoReserva {
+  Pendente = 1,
+  Confirmada = 2,
+  Cancelada = 3,
+  Concluida = 4
+}
+
+✅ SITUAÇÃO RECEBÍVEL:
+enum SituacaoRecebivel {
+  Pendente = 1,
+  Pago = 2,
+  Vencido = 3,
+  Cancelado = 4
+}
+
+✅ SITUAÇÃO USUÁRIO:
+enum SituacaoUsuario {
+  Ativo = 1,
+  Inativo = 2,
+  Bloqueado = 3
+}
+
+✅ TIPO LOCAL:
+enum TipoLocal {
+  Quadra = 1,
+  Campo = 2,
+  Piscina = 3,
+  Academia = 4,
+  Outro = 5
+}
+
+================================================================================
+🔧 IMPLEMENTAÇÃO DOS NOVOS CAMPOS
+================================================================================
+
+📋 CAMPO "cor" na Reserva:
+- Deve buscar a cor do Local associado à reserva
+- Implementar lógica para obter a cor do Local através do localId
+- Exemplo: reserva.cor = local.cor
+
+📋 CAMPO "esporte" na Reserva:
+- Deve ser preenchido com o tipo de esporte da reserva
+- Pode ser um campo de seleção ou input livre
+- Exemplo: "Futebol", "Basquete", "Natação", etc.
+
+================================================================================
+📝 CHECKLIST DE IMPLEMENTAÇÃO
+================================================================================
+
+□ Remover campo "subtitulo" da entidade Cliente
+□ Remover campo "subtitulo" da entidade Local
+□ Adicionar campo "cor" na entidade Reserva (buscar do Local)
+□ Adicionar campo "esporte" na entidade Reserva
+□ Atualizar todos os enums para seguir o padrão do backend
+□ Atualizar interfaces TypeScript
+□ Atualizar componentes que usam essas entidades
+□ Atualizar formulários de criação/edição
+□ Atualizar listagens e exibições
+□ Testar todas as funcionalidades afetadas
+
+================================================================================
+⚠️ OBSERVAÇÕES IMPORTANTES
+================================================================================
+
+1. BACKUP: Faça backup do código antes de implementar as mudanças
+2. TESTES: Teste todas as funcionalidades após as alterações
+3. CONSISTÊNCIA: Mantenha os enums idênticos ao backend
+4. VALIDAÇÃO: Implemente validações para os novos campos
+5. DOCUMENTAÇÃO: Atualize a documentação da API se necessário
+
+================================================================================
+📞 SUPORTE
+================================================================================
+
+Em caso de dúvidas sobre a implementação, consulte:
+- Documentação do backend
+- Código fonte das entidades
+- Logs da aplicação para verificar erros
+
+================================================================================

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MODULE_COLORS } from '@/constants/moduleColors';
 import { toast } from '@/hooks/use-toast';
+import { useGruposPermissoes } from '@/hooks/useGruposPermissoes';
 import { BarChart3, CheckCircle, Edit, Palette, Settings, Shield, Star, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -16,6 +17,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 const EditGroup = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { getGrupoById } = useGruposPermissoes();
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -89,17 +92,29 @@ const EditGroup = () => {
   // Load group data on component mount
   useEffect(() => {
     if (id) {
-      // Mock data loading - replace with actual API call
-      const mockGroup = {
-        name: 'Gerentes',
-        description: 'Acesso de gerenciamento com restrições administrativas',
-        color: 'bg-gradient-to-r from-blue-500 to-cyan-500',
-        permissions: ['inicio', 'bar', 'events', 'school']
+      const carregarGrupo = async () => {
+        try {
+          const grupo = getGrupoById(id);
+          if (grupo) {
+            setFormData({
+              name: grupo.nome || '',
+              description: grupo.descricao || '',
+              color: grupo.cor || 'bg-gradient-to-r from-blue-500 to-cyan-500',
+              permissions: grupo.permissoes?.map(p => p.id) || []
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao carregar grupo:', error);
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar dados do grupo",
+            variant: "destructive"
+          });
+        }
       };
-      
-      setFormData(mockGroup);
+      carregarGrupo();
     }
-  }, [id]);
+  }, [id, getGrupoById]);
 
   const handleModuleToggle = (moduleId: string) => {
     setFormData(prev => {

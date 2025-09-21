@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 // CONFIGURAÇÕES DA API
 // ============================================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7000/api';
 /* const API_TIMEOUT = 10000; // 10 segundos */
 const API_TIMEOUT = 60000; // 1 minuto
 
@@ -40,12 +40,18 @@ export interface ApiPagedResponseV2<T> {
   currentPage: number;
   pageSize: number;
   totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export interface ApiError {
   message: string;
   status: number;
   code?: string;
+  errors?: Array<{
+    field: string;
+    message: string;
+  }>;
 }
 
 // ============================================================================
@@ -57,6 +63,7 @@ class Api {
   private timeout: number;
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private filialId: string | null = null;
   private showNotifications: boolean = true;
 
   constructor(baseURL: string = API_BASE_URL, timeout: number = API_TIMEOUT) {
@@ -193,6 +200,7 @@ class Api {
   private loadTokens() {
     this.accessToken = localStorage.getItem('accessToken');
     this.refreshToken = localStorage.getItem('refreshToken');
+    this.filialId = localStorage.getItem('filialId');
   }
 
   setTokens(accessToken: string, refreshToken: string) {
@@ -202,11 +210,22 @@ class Api {
     localStorage.setItem('refreshToken', refreshToken);
   }
 
+  setFilial(filialId: string) {
+    this.filialId = filialId;
+    localStorage.setItem('filialId', filialId);
+  }
+
+  getFilial(): string | null {
+    return this.filialId;
+  }
+
   clearTokens() {
     this.accessToken = null;
     this.refreshToken = null;
+    this.filialId = null;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('filialId');
     localStorage.removeItem('user');
   }
 
@@ -245,13 +264,22 @@ class Api {
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      // Adicionar token automaticamente
+      // Adicionar headers obrigatórios automaticamente
+      const headers: Record<string, string> = {
+        ...(options.headers as Record<string, string>),
+      };
+
+      // Header de autorização
       if (this.accessToken) {
-        options.headers = {
-          ...options.headers,
-          'Authorization': `Bearer ${this.accessToken}`
-        };
+        headers['Authorization'] = `Bearer ${this.accessToken}`;
       }
+
+      // Header de filial (obrigatório conforme documentação)
+      if (this.filialId) {
+        headers['Filial'] = this.filialId;
+      }
+
+      options.headers = headers;
 
       const response = await fetch(url, {
         ...options,
@@ -363,7 +391,7 @@ class Api {
 
     try {
       console.log('🔄 Tentando renovar token...');
-      const url = this.buildUrl('api/autenticacao/refresh');
+      const url = this.buildUrl('auth/refresh');
       
       const response = await fetch(url, {
         method: 'POST',
@@ -420,7 +448,8 @@ class Api {
       return {
         message: errorData.message || `HTTP ${response.status}`,
         status: response.status,
-        code: errorData.code
+        code: errorData.code,
+        errors: errorData.errors
       };
     } catch {
       return {
@@ -450,6 +479,7 @@ class Api {
       status: 0
     };
   }
+
 }
 
 // ============================================================================

@@ -1,9 +1,23 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Reservation } from '@/hooks/useCalendar';
-import { useVenueSettings } from '@/hooks/useVenueSettings';
 import { useLocais } from '@/hooks/useLocais';
 import { MapPin, Plus, User } from 'lucide-react';
 import CalendarDayColumnsView from './CalendarDayColumnsView';
+
+// Interface temporária para Reservation
+interface Reservation {
+  id: string;
+  client: string;
+  venue: string;
+  venueId: string;
+  startTime: string;
+  endTime: string;
+  start: string;
+  status: string;
+  color: string;
+  sport: string;
+  notes: string;
+  title: string;
+}
 
 interface CalendarDayViewProps {
   currentDate: Date;
@@ -33,8 +47,7 @@ const CalendarDayView = ({
     );
   }
   
-  const { generateTimeSlots, getVenueInterval } = useVenueSettings();
-  const { getLocalByName, getLocalById } = useLocais();
+  const { generateTimeSlots, getVenueInterval, getLocalById } = useLocais();
   
   // Gerar slots baseados no local selecionado
   const timeSlots = generateTimeSlots(selectedVenue || 'all');
@@ -75,7 +88,7 @@ const CalendarDayView = ({
   // Função para obter a cor do local baseado no venueId
   const getVenueColorById = (venueId: string) => {
     const local = getLocalById(venueId);
-    return local?.color || '#6b7280';
+    return local?.cor || '#6b7280';
   };
 
   const handleNewReservation = (time: string) => {

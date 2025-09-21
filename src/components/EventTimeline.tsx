@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useLocais } from '@/hooks/useLocais';
-import { useVenueSettings } from '@/hooks/useVenueSettings';
 import { Clock, MapPin, Plus, Trash, User, X } from 'lucide-react';
 import { useState } from 'react';
 import EmptyTimelineState from './EmptyTimelineState';
@@ -55,8 +54,7 @@ const EventTimeline = ({
   getLocalByName: propGetLocalByName
 }: EventTimelineProps) => {
   
-  const { generateTimeSlots, getVenueInterval } = useVenueSettings();
-  const { locais } = useLocais();
+  const { generateTimeSlots, getVenueInterval, data: locais } = useLocais();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<number | null>(null);
   

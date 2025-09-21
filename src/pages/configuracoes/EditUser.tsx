@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MODULE_COLORS } from '@/constants/moduleColors';
 import { toast } from '@/hooks/use-toast';
+import { useUsuarios } from '@/hooks/useUsuarios';
 import { Camera, CheckCircle, Edit, Shield, Star, Upload, User } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -24,6 +25,8 @@ interface UserGroup {
 const EditUser = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { getUsuarioById } = useUsuarios();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -69,19 +72,31 @@ const EditUser = () => {
   // Load user data on component mount
   useEffect(() => {
     if (id) {
-      // Mock data loading - replace with actual API call
-      const mockUser = {
-        name: 'João Silva',
-        email: 'joao@exemplo.com',
-        status: 'ativo',
-        userGroupId: '2',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+      const carregarUsuario = async () => {
+        try {
+          const usuario = getUsuarioById(id);
+          if (usuario) {
+            setFormData({
+              name: usuario.nome || '',
+              email: usuario.email || '',
+              status: usuario.situacao === 'Ativo' ? 'ativo' : 'inativo',
+              userGroupId: usuario.grupoPermissaoId || '',
+              avatar: usuario.foto || ''
+            });
+            setAvatarPreview(usuario.foto || '');
+          }
+        } catch (error) {
+          console.error('Erro ao carregar usuário:', error);
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar dados do usuário",
+            variant: "destructive"
+          });
+        }
       };
-      
-      setFormData(mockUser);
-      setAvatarPreview(mockUser.avatar);
+      carregarUsuario();
     }
-  }, [id]);
+  }, [id, getUsuarioById]);
 
   const selectedGroup = userGroups.find(group => group.id === formData.userGroupId);
 

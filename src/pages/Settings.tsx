@@ -1,12 +1,24 @@
 
 import ModuleHeader from '@/components/ModuleHeader';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MODULE_COLORS } from '@/constants/moduleColors';
+import { usePermissoesUsuario } from '@/contexts/PermissoesUsuarioContext';
 import { Building, DollarSign, FileText, Globe, MapPin, Settings as SettingsIcon, Shield, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { 
+    hasEmpresaAccess, 
+    hasFiliaisAccess, 
+    hasUsuariosAccess, 
+    hasGrupoPermissoesAccess,
+    hasParametrosAccess,
+    hasFinanceiroAccess,
+    hasIntegracoesAccess,
+    hasAuditoriaAccess
+  } = usePermissoesUsuario();
 
   const configSections = [
     // MÓDULO SISTEMA - Configurações Gerais
@@ -16,7 +28,8 @@ const Settings = () => {
       description: 'Informações básicas da empresa atual',
       icon: <Building className="h-6 w-6" />,
       color: 'bg-blue-600',
-      path: '/configuracoes/empresa'
+      path: '/configuracoes/empresa',
+      hasAccess: hasEmpresaAccess()
     },
     {
       id: 'filiais',
@@ -24,7 +37,8 @@ const Settings = () => {
       description: 'Gerenciar filiais e localizações',
       icon: <MapPin className="h-6 w-6" />,
       color: 'bg-indigo-500',
-      path: '/configuracoes/filiais'
+      path: '/configuracoes/filiais',
+      hasAccess: hasFiliaisAccess()
     },
     
     // MÓDULO USUÁRIOS - Gestão de Usuários e Permissões
@@ -34,7 +48,8 @@ const Settings = () => {
       description: 'Controlar usuários do sistema',
       icon: <Users className="h-6 w-6" />,
       color: 'bg-green-500',
-      path: '/configuracoes/usuarios'
+      path: '/configuracoes/usuarios',
+      hasAccess: hasUsuariosAccess()
     },
     {
       id: 'grupos',
@@ -42,7 +57,8 @@ const Settings = () => {
       description: 'Definir perfis de acesso reutilizáveis',
       icon: <Shield className="h-6 w-6" />,
       color: 'bg-purple-500',
-      path: '/configuracoes/grupos'
+      path: '/configuracoes/grupos',
+      hasAccess: hasGrupoPermissoesAccess()
     },
     {
       id: 'permissoes',
@@ -50,7 +66,8 @@ const Settings = () => {
       description: 'Visualizar permissões do sistema',
       icon: <Shield className="h-6 w-6" />,
       color: 'bg-purple-600',
-      path: '/configuracoes/permissoes'
+      path: '/configuracoes/permissoes',
+      hasAccess: hasGrupoPermissoesAccess() // Permissões são parte dos grupos
     },
     
     // MÓDULO PARÂMETROS - Configurações Específicas
@@ -60,7 +77,8 @@ const Settings = () => {
       description: 'Configurações gerais do sistema',
       icon: <SettingsIcon className="h-6 w-6" />,
       color: 'bg-orange-500',
-      path: '/configuracoes/parametros'
+      path: '/configuracoes/parametros',
+      hasAccess: hasParametrosAccess()
     },
     {
       id: 'parametros-filial',
@@ -68,7 +86,8 @@ const Settings = () => {
       description: 'Configurações específicas por filial',
       icon: <SettingsIcon className="h-6 w-6" />,
       color: 'bg-orange-600',
-      path: '/configuracoes/parametros-por-filial'
+      path: '/configuracoes/parametros-por-filial',
+      hasAccess: hasParametrosAccess()
     },
     
     // MÓDULO FINANCEIRO - Configurações Financeiras
@@ -78,7 +97,8 @@ const Settings = () => {
       description: 'Configurações fiscais e contábeis',
       icon: <DollarSign className="h-6 w-6" />,
       color: 'bg-emerald-500',
-      path: '/configuracoes/financeiro-global'
+      path: '/configuracoes/financeiro-global',
+      hasAccess: hasFinanceiroAccess()
     },
     
     // MÓDULO INTEGRAÇÕES - Serviços Externos
@@ -88,7 +108,8 @@ const Settings = () => {
       description: 'Conectar com serviços externos',
       icon: <Globe className="h-6 w-6" />,
       color: 'bg-cyan-500',
-      path: '/configuracoes/integracoes'
+      path: '/configuracoes/integracoes',
+      hasAccess: hasIntegracoesAccess()
     },
     
     // MÓDULO AUDITORIA - Monitoramento
@@ -98,7 +119,8 @@ const Settings = () => {
       description: 'Histórico de alterações e atividades',
       icon: <FileText className="h-6 w-6" />,
       color: 'bg-gray-500',
-      path: '/configuracoes/auditoria'
+      path: '/configuracoes/auditoria',
+      hasAccess: hasAuditoriaAccess()
     }
   ];
 
@@ -125,14 +147,25 @@ const Settings = () => {
           {configSections.map((section) => (
             <Card 
               key={section.id}
-              className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
-              onClick={() => navigate(section.path)}
+              className={`transition-all ${
+                section.hasAccess 
+                  ? 'cursor-pointer hover:shadow-lg hover:scale-105' 
+                  : 'cursor-not-allowed opacity-50'
+              }`}
+              onClick={section.hasAccess ? () => navigate(section.path) : undefined}
             >
               <CardHeader className="pb-3">
                 <div className={`w-12 h-12 rounded-lg ${section.color} flex items-center justify-center text-white mb-3`}>
                   {section.icon}
                 </div>
-                <CardTitle className="text-lg">{section.title}</CardTitle>
+                <div>
+                  <CardTitle className="text-lg">{section.title}</CardTitle>
+                  {!section.hasAccess && (
+                    <Badge className="mt-1 bg-red-500 text-white">
+                      Sem Permissão
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-sm">

@@ -1,6 +1,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { MODULE_COLORS } from '@/constants/moduleColors';
+import { usePermissoesUsuario } from '@/contexts/PermissoesUsuarioContext';
 import { Listagem } from '@/core/components/listagem';
 import { useFiliais } from '@/hooks/useFiliais';
 import { Filial } from '@/types/filial';
@@ -10,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 const Filiais = () => {
   const navigate = useNavigate();
   const filiaisHook = useFiliais();
+  const { hasFiliaisAccess } = usePermissoesUsuario();
 
   const colunas = [
     {
@@ -42,8 +44,8 @@ const Filiais = () => {
       filtravel: true,
       tipoFiltro: 'select' as const,
       renderizar: (filial: Filial) => (
-        <Badge variant={filial.ativo ? 'default' : 'secondary'}>
-          {filial.ativo ? 'Ativa' : 'Inativa'}
+        <Badge variant={filial.situacao === 'Ativo' ? 'default' : 'secondary'}>
+          {filial.situacao}
         </Badge>
       ),
     },
@@ -61,14 +63,14 @@ const Filiais = () => {
     },
   ];
 
-  const acoes = [
+  const acoes = hasFiliaisAccess() ? [
     {
       titulo: 'Editar',
       icone: <Settings className="h-4 w-4" />,
       onClick: (filial: Filial) => navigate(`/configuracoes/filiais/${filial.id}/editar`),
       variante: 'outline' as const,
     },
-  ];
+  ] : [];
 
   const cardsResumo = [
     {
@@ -79,7 +81,7 @@ const Filiais = () => {
     },
     {
       titulo: 'Filiais Ativas',
-      valor: (data: Filial[] = []) => Array.isArray(data) ? data.filter(f => f.ativo).length : 0,
+      valor: (data: Filial[] = []) => Array.isArray(data) ? data.filter(f => f.situacao === 'Ativo').length : 0,
       icone: MapPin,
       cor: 'bg-green-500',
     },
@@ -110,11 +112,11 @@ const Filiais = () => {
       hook={filiaisHook}
       colunas={colunas}
       acoes={acoes}
-      botaoCriar={{
+      botaoCriar={hasFiliaisAccess() ? {
         titulo: "Nova Filial",
         icone: <Plus className="h-4 w-4" />,
         rota: "/configuracoes/filiais/nova"
-      }}
+      } : undefined}
       cardsResumo={cardsResumo}
       mostrarExportar={true}
       nomeArquivoExportar="filiais"

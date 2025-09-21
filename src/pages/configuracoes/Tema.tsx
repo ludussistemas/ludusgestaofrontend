@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MODULE_COLORS } from '@/constants/moduleColors';
+import { useAuth } from '@/contexts/AuthContext';
 import { Eye, Palette, Save, Upload } from 'lucide-react';
 import { useState } from 'react';
 
 const Tema = () => {
+  const { filialAtual } = useAuth();
   const [temaData, setTemaData] = useState({
     corPrimaria: '#3b82f6',
     corSecundaria: '#64748b',
@@ -240,7 +242,7 @@ const Tema = () => {
                         className="font-semibold"
                         style={{ fontFamily: temaData.fonte }}
                       >
-                        Arena Sports Club
+                        {filialAtual?.nome || 'Arena Sports Club'}
                       </span>
                     </div>
                   </div>

@@ -1,5 +1,5 @@
-import { api, ApiResponse } from '../lib/api';
 import { toast } from 'sonner';
+import { api, ApiResponse } from '../lib/api';
 
 export interface EnderecoCEP {
   cep: string;
@@ -38,7 +38,7 @@ export const useUtilitarios = () => {
 
   const executarSeed = async (): Promise<boolean> => {
     try {
-      const response = await api.post<ApiResponse<any>>('/api/utilitarios/seed');
+      const response = await api.post<ApiResponse<any>>('utilitarios/seed');
       
       if (response.success) {
         toast.success('Dados base inseridos com sucesso!');

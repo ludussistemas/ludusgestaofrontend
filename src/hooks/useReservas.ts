@@ -4,8 +4,8 @@ import { api, ApiResponse } from '../lib/api';
 import { Reserva } from '../types';
 
 export const useReservas = () => {
-  const baseHook = useBaseCrud<Reserva>('/api/reservas', {
-    transformData: (data) => data,
+  const baseHook = useBaseCrud<Reserva>('reservas', {
+    transformData: (data) => data, // Usar dados exatamente como vêm do backend
     transformPagination: (pagination) => pagination
   });
 
@@ -15,8 +15,8 @@ export const useReservas = () => {
     await baseHook.fetchData({ limit: 1000 });
     return baseHook.data.map(reserva => ({
       id: reserva.id,
-      label: reserva.titulo,
-      subtitle: reserva.cliente?.nome || 'Cliente não informado'
+      label: reserva.observacoes || 'Reserva',
+      subtitle: `Reserva ${reserva.id.substring(0, 8)}`
     }));
   };
 
@@ -24,7 +24,7 @@ export const useReservas = () => {
     try {
       const loadingToast = toast.loading('Criando reserva...');
       
-      const response = await api.post<ApiResponse<Reserva>>('/api/reservas', reservaData);
+      const response = await api.post<ApiResponse<Reserva>>('reservas', reservaData);
       
       toast.dismiss(loadingToast);
 
@@ -50,7 +50,7 @@ export const useReservas = () => {
     try {
       const loadingToast = toast.loading('Atualizando reserva...');
       
-      const response = await api.put<ApiResponse<Reserva>>(`/api/reservas/${id}`, reservaData);
+      const response = await api.put<ApiResponse<Reserva>>(`reservas/${id}`, reservaData);
       
       toast.dismiss(loadingToast);
 
@@ -76,7 +76,7 @@ export const useReservas = () => {
     try {
       const loadingToast = toast.loading('Confirmando reserva...');
       
-      const response = await api.put<ApiResponse<Reserva>>(`/api/reservas/${id}/confirmar`);
+      const response = await api.put<ApiResponse<Reserva>>(`reservas/${id}/confirmar`);
       
       toast.dismiss(loadingToast);
 
@@ -98,37 +98,12 @@ export const useReservas = () => {
     }
   };
 
-  const cancelarReserva = async (id: string) => {
-    try {
-      const loadingToast = toast.loading('Cancelando reserva...');
-      
-      const response = await api.put<ApiResponse<Reserva>>(`/api/reservas/${id}/cancelar`);
-      
-      toast.dismiss(loadingToast);
-
-      if (response.success && response.data) {
-        toast.success('Reserva cancelada com sucesso!');
-        await baseHook.fetchData({ 
-          page: baseHook.pagination.currentPage, 
-          limit: baseHook.pagination.pageSize 
-        });
-        return response.data;
-      } else {
-        toast.error(response.message || 'Erro ao cancelar reserva');
-        throw new Error(response.message || 'Erro ao cancelar reserva');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao cancelar reserva';
-      toast.error(errorMessage);
-      throw error;
-    }
-  };
 
   const finalizarReserva = async (id: string) => {
     try {
       const loadingToast = toast.loading('Finalizando reserva...');
       
-      const response = await api.put<ApiResponse<Reserva>>(`/api/reservas/${id}/finalizar`);
+      const response = await api.put<ApiResponse<Reserva>>(`reservas/${id}/finalizar`);
       
       toast.dismiss(loadingToast);
 
@@ -145,6 +120,35 @@ export const useReservas = () => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao finalizar reserva';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const cancelarReserva = async (reservaId: string, motivoCancelamento: string) => {
+    try {
+      const loadingToast = toast.loading('Cancelando reserva...');
+      
+      const response = await api.post<ApiResponse<Reserva>>('reservas/cancelar', { 
+        reservaId, 
+        motivoCancelamento 
+      });
+      
+      toast.dismiss(loadingToast);
+
+      if (response.success && response.data) {
+        toast.success('Reserva cancelada com sucesso!');
+        await baseHook.fetchData({ 
+          page: baseHook.pagination.currentPage, 
+          pageSize: baseHook.pagination.pageSize 
+        });
+        return response.data;
+      } else {
+        toast.error(response.message || 'Erro ao cancelar reserva');
+        throw new Error(response.message || 'Erro ao cancelar reserva');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao cancelar reserva';
       toast.error(errorMessage);
       throw error;
     }

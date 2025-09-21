@@ -22,18 +22,11 @@ const initialState = getInitialAgendaState();
 
 export function useAgenda() {
   const navigate = useNavigate();
-  const { locais, loading: locaisLoading } = useLocais();
+  const { data: locais, loading: locaisLoading } = useLocais();
   const {
-    reservas,
+    data: reservas,
     loading: reservasLoading,
-    fetchReservas,
-    createReserva,
-    updateReserva,
-    deleteReserva,
-    getReserva,
-    confirmarReserva,
-    cancelarReserva,
-    finalizarReserva
+    fetchData: fetchReservas
   } = useReservas();
 
   // Estado de carregamento da restauração
@@ -256,7 +249,7 @@ export function useAgenda() {
       const dataFim = filtrosReservas.dataFim.toISOString().split('T')[0];
       
       filters.push({
-        property: 'data',
+        property: 'dataInicio',
         operator: 'between',
         value: `${dataInicio}:${dataFim}`
       });
@@ -393,7 +386,20 @@ export function useAgenda() {
     }
 
     dias.forEach(dia => {
-      const reservasDoDia = reservasAgenda.filter(reserva => isSameDay(parseISO(reserva.data), dia));
+      const reservasDoDia = reservasAgenda.filter(reserva => {
+        try {
+          // Usar o campo 'dataInicio' que é o principal do backend
+          if (!reserva.dataInicio) {
+            return false;
+          }
+          
+          const dataReserva = reserva.dataInicio.split('T')[0];
+          return isSameDay(parseISO(dataReserva), dia);
+        } catch (error) {
+          console.warn('Erro ao parsear data da reserva:', reserva, error);
+          return false;
+        }
+      });
       organizados[dia.toISOString()] = reservasDoDia;
     });
     

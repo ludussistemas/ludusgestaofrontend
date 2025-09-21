@@ -1,10 +1,11 @@
 // ============================================================================
-// ENUM DE SITUAÇÃO DE RESERVA
+// ENUM DE TIPO DE LOCAL
 // ============================================================================
 
-export enum SituacaoReserva {
-  Pendente = 1,
-  Confirmada = 2,
-  Cancelada = 3,
-  Concluida = 4
-} 
+export enum TipoLocal {
+  Quadra = 1,
+  Campo = 2,
+  Piscina = 3,
+  Academia = 4,
+  Outro = 5
+}

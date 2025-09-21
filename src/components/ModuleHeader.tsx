@@ -33,7 +33,7 @@ const ModuleHeader: React.FC<ModuleHeaderProps> = ({
   backLabel = 'Voltar'
 }) => {
   const navigate = useNavigate();
-  const { user, company, currentBranch } = useAuth();
+  const { user, company, currentBranch, filialAtual } = useAuth();
   const { goBack } = useNavigationHistory();
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
 
@@ -92,7 +92,7 @@ const ModuleHeader: React.FC<ModuleHeaderProps> = ({
             <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
               <div className="text-center">
                 <p className={`text-sm font-medium ${textColor}`}>
-                  {company?.name || 'Arena Sports Club'}
+                  {filialAtual?.nome || company?.name || 'Arena Sports Club'}
                   {currentBranch && (
                     <>
                       <span className={`mx-2 ${isInicio ? 'text-muted-foreground' : 'text-white/60'}`}>-</span>

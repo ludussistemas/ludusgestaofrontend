@@ -1,10 +1,9 @@
 // ============================================================================
-// ENUM DE SITUAÇÃO DE RESERVA
+// ENUM DE SITUAÇÃO DE USUÁRIO
 // ============================================================================
 
-export enum SituacaoReserva {
-  Pendente = 1,
-  Confirmada = 2,
-  Cancelada = 3,
-  Concluida = 4
-} 
+export enum SituacaoUsuario {
+  Ativo = 1,
+  Inativo = 2,
+  Bloqueado = 3
+}

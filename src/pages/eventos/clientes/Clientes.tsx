@@ -1,4 +1,5 @@
 
+import { usePermissoesUsuario } from '@/contexts/PermissoesUsuarioContext';
 import { Listagem } from '@/core/components/listagem';
 import { useClientes } from '@/hooks/useClientes';
 import type { Cliente } from '@/types';
@@ -8,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 export default function Clientes() {
   const navigate = useNavigate();
   const hook = useClientes();
+  const { hasClientesAccess } = usePermissoesUsuario();
 
   return (
     <Listagem<Cliente>
@@ -64,18 +66,18 @@ export default function Clientes() {
           tipo: 'data'
         },
       ]}
-      acoes={[
+      acoes={hasClientesAccess() ? [
         {
           titulo: 'Editar',
           onClick: (cliente) => navigate(`/eventos/clientes/${cliente.id}`),
           variante: 'outline',
         },
-      ]}
-      botaoCriar={{
+      ] : []}
+      botaoCriar={hasClientesAccess() ? {
         titulo: 'Novo Cliente',
         icone: <UserPlus className="h-4 w-4" />,
         rota: '/eventos/clientes/novo',
-      }}
+      } : undefined}
       cardsResumo={[
         {
           titulo: 'Total de Clientes',

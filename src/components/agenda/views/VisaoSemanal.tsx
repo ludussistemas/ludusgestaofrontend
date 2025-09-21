@@ -8,7 +8,7 @@ import { memo, useMemo } from 'react';
 
 // Timeline semanal com horas no eixo Y e dias no eixo X
 const VisaoSemanal = memo(() => {
-  const { buscarPorId, locais } = useLocais();
+  const { data: locais } = useLocais();
   const {
     dataAtual,
     eventosPorDiaELocal,
@@ -74,13 +74,15 @@ const VisaoSemanal = memo(() => {
 
   // Função para calcular posição e altura do evento
   const getEventPosition = (evento: Reserva) => {
-    const [startHour, startMinute] = evento.horaInicio.split(':').map(Number);
-    const [endHour, endMinute] = evento.horaFim.split(':').map(Number);
+    const startTime = evento.dataInicio?.split('T')[1]?.substring(0, 5) || '';
+    const endTime = evento.dataFim?.split('T')[1]?.substring(0, 5) || '';
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
     
     // Encontrar o índice do slot de início
-    const startTime = startHour + startMinute / 60;
-    const endTime = endHour + endMinute / 60;
-    const duration = endTime - startTime;
+    const startTimeDecimal = startHour + startMinute / 60;
+    const endTimeDecimal = endHour + endMinute / 60;
+    const duration = endTimeDecimal - startTimeDecimal;
     
     // Calcular posição baseada no slot
     const startSlotIndex = timeSlots.findIndex(slot => {
@@ -97,8 +99,10 @@ const VisaoSemanal = memo(() => {
 
   // Função para verificar se evento está no horário
   const isEventInTimeSlot = (evento: Reserva, slot: string) => {
-    const [startHour] = evento.horaInicio.split(':').map(Number);
-    const [endHour] = evento.horaFim.split(':').map(Number);
+    const startTime = evento.dataInicio?.split('T')[1]?.substring(0, 5) || '';
+    const endTime = evento.dataFim?.split('T')[1]?.substring(0, 5) || '';
+    const [startHour] = startTime.split(':').map(Number);
+    const [endHour] = endTime.split(':').map(Number);
     const [slotHour] = slot.split(':').map(Number);
     return startHour <= slotHour && endHour > slotHour;
   };
@@ -225,26 +229,29 @@ const VisaoSemanal = memo(() => {
                     {/* Eventos que estão ativos neste horário */}
                     {dayEvents
                       .filter(evento => {
-                        const [startHour, startMinute] = evento.horaInicio.split(':').map(Number);
-                        const [endHour, endMinute] = evento.horaFim.split(':').map(Number);
+                        const startTime = evento.dataInicio?.split('T')[1]?.substring(0, 5) || '';
+                        const endTime = evento.dataFim?.split('T')[1]?.substring(0, 5) || '';
+                        const [startHour, startMinute] = startTime.split(':').map(Number);
+                        const [endHour, endMinute] = endTime.split(':').map(Number);
                         const [slotHour, slotMinute] = slot.split(':').map(Number);
                         
-                        const startTime = startHour + startMinute / 60;
-                        const endTime = endHour + endMinute / 60;
+                        const startTimeDecimal = startHour + startMinute / 60;
+                        const endTimeDecimal = endHour + endMinute / 60;
                         const slotTime = slotHour + slotMinute / 60;
                         
                         // Mostrar evento se ele começa neste slot OU se está ativo neste slot
-                        return startTime === slotTime || (startTime < slotTime && endTime > slotTime);
+                        return startTimeDecimal === slotTime || (startTimeDecimal < slotTime && endTimeDecimal > slotTime);
                       })
                       .map(evento => {
                         const { top, height } = getEventPosition(evento);
-                        const [startHour, startMinute] = evento.horaInicio.split(':').map(Number);
-                        const startTime = startHour + startMinute / 60;
+                        const startTime = evento.dataInicio?.split('T')[1]?.substring(0, 5) || '';
+                        const [startHour, startMinute] = startTime.split(':').map(Number);
+                        const startTimeDecimal = startHour + startMinute / 60;
                         const [slotHour, slotMinute] = slot.split(':').map(Number);
                         const slotTime = slotHour + slotMinute / 60;
                         
                         // Se o evento começa neste slot, mostrar normalmente
-                        if (startTime === slotTime) {
+                        if (startTimeDecimal === slotTime) {
                           return (
                             <div
                               key={evento.id}
@@ -266,8 +273,8 @@ const VisaoSemanal = memo(() => {
                                 handleEventClick(evento);
                               }}
                             >
-                              <div className="font-medium truncate">{evento.cliente}</div>
-                              <div className="truncate text-[9px]">{evento.horaInicio} - {evento.horaFim}</div>
+                              <div className="font-medium truncate">{evento.cliente?.nome || 'Cliente não informado'}</div>
+                              <div className="truncate text-[9px]">{evento.dataInicio?.split('T')[1]?.substring(0, 5) || ''} - {evento.dataFim?.split('T')[1]?.substring(0, 5) || ''}</div>
                               {evento.esporte && (
                                 <div className="truncate text-[8px] opacity-90">{evento.esporte}</div>
                               )}
