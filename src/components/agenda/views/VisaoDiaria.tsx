@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useContextoAgenda } from '@/contexts/AgendaContext';
 import { useLocais } from '@/hooks/useLocais';
 import { cn } from '@/lib/utils';
-import type { Evento } from '@/types/eventos';
+import type { Reserva } from '@/types';
 import { format, isSameDay, isSameHour, parseISO } from 'date-fns';
 import { memo, useEffect, useMemo, useState } from 'react';
 
@@ -103,9 +103,9 @@ function CurrentTimeIndicator({ currentTime, timeSlots }: { currentTime: Date; t
   );
 }
 
-function AgendaEvent({ evento, style, onClick }: { evento: Evento; style?: React.CSSProperties; onClick: (e: React.MouseEvent) => void }) {
-  const { buscarPorId } = useLocais();
-  const local = buscarPorId(evento.localId);
+function AgendaEvent({ evento, style, onClick }: { evento: Reserva; style?: React.CSSProperties; onClick: (e: React.MouseEvent) => void }) {
+  const { getLocalById } = useLocais();
+  const local = getLocalById(evento.localId);
   
   return (
     <div
@@ -132,7 +132,7 @@ function AgendaEvent({ evento, style, onClick }: { evento: Evento; style?: React
 
 const VisaoDiaria = memo(() => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { buscarPorId, locais } = useLocais();
+  const { getLocalById, locais } = useLocais();
   const {
     dataAtual,
     eventos,

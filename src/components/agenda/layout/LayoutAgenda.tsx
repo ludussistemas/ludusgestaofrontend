@@ -18,6 +18,7 @@ const LayoutAgenda = memo(() => {
     sidebarExpanded,
     locais,
     eventos,
+    eventCountByVenue,
     handleEventClick,
     handleDataClick,
     handleNovoEvento,
@@ -34,8 +35,8 @@ const LayoutAgenda = memo(() => {
   const eventDates = useMemo(() => {
     const uniqueDates = new Set<string>();
     eventos.forEach(evento => {
-      if (evento.data) {
-        uniqueDates.add(evento.data);
+      if (evento.dataInicio) {
+        uniqueDates.add(evento.dataInicio);
       }
     });
     return Array.from(uniqueDates);
@@ -51,7 +52,7 @@ const LayoutAgenda = memo(() => {
         locais={allLocais}
         allLocais={allLocais}
         locaisLoading={locaisLoading}
-        eventCountByVenue={{}}
+        eventCountByVenue={eventCountByVenue}
         onToggle={handleToggleSidebar}
         onDateChange={dateValue => {
           // Atualiza data centralizada

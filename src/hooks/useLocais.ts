@@ -1,5 +1,6 @@
 
 import { toast } from 'sonner';
+import { useCallback } from 'react';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
 import { api, ApiResponse } from '../lib/api';
 import { Local } from '../types';
@@ -10,7 +11,7 @@ export const useLocais = () => {
     transformPagination: (pagination) => pagination
   });
 
-  const getLocalById = (id: string) => baseHook.data.find(l => l.id === id);
+  const getLocalById = useCallback((id: string) => baseHook.data.find(l => l.id === id), [baseHook.data]);
 
   const getLocaisForSearch = async () => {
     await baseHook.fetchData({ limit: 1000 });

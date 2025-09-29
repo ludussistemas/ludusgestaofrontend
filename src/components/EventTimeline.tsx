@@ -199,7 +199,8 @@ const EventTimeline = ({
         <div className="flex-1 overflow-y-auto relative">
           {/* Time slots grid */}
           <div className="relative">
-            {timeSlots.map((time, index) => {
+            {timeSlots.map((slot, index) => {
+              const time = slot.time;
               const availability = getAvailableSlot(time);
               const canClick = !isEditingMode && availability.available;
               

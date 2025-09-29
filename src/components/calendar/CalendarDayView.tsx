@@ -101,7 +101,8 @@ const CalendarDayView = ({
         <CardContent className="p-0 flex-1 relative">
           {/* Time slots grid */}
           <div className="relative">
-            {timeSlots.map((time, index) => {
+            {timeSlots.map((slot, index) => {
+              const time = slot.time;
               const isAvailable = getSlotAvailability(time);
               
               return (

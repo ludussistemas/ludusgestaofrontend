@@ -138,6 +138,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Carregar dados completos do usuário (empresa)
         await fetchUserCompleteData(usuario.id);
         
+        // Forçar carregamento de permissões após login
+        console.log('🔐 Forçando carregamento de permissões após login...');
+        // Disparar evento customizado para notificar o contexto de permissões
+        const filialId = filiais && filiais.length > 0 ? filiais[0].id : null;
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { 
+          detail: { userId: usuario.id, filialId } 
+        }));
+        
         toast.success('Login realizado com sucesso!');
         return true;
       } else {
@@ -239,6 +247,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userData?.id) {
           await fetchUserCompleteData(userData.id);
         }
+        
+        // Forçar carregamento de permissões após restauração de sessão
+        console.log('🔐 Forçando carregamento de permissões após restauração de sessão...');
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { 
+          detail: { userId: userData.id, filialId: filialAtual?.id } 
+        }));
       }
     };
 

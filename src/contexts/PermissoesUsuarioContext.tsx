@@ -72,6 +72,8 @@ interface PermissoesUsuarioContextType {
   hasIntegracoesAccess: () => boolean;
   hasAuditoriaAccess: () => boolean;
   refreshPermissions: () => Promise<void>;
+  forceLoadPermissions: () => Promise<void>;
+  clearPermissionsCache: () => void;
 }
 
 const PermissoesUsuarioContext = createContext<PermissoesUsuarioContextType | undefined>(undefined);
@@ -86,9 +88,26 @@ export const usePermissoesUsuario = () => {
 
 export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, filialAtual } = useAuth();
-  const [permissoes, setPermissoes] = useState<string[]>([]);
-  const [modulos, setModulos] = useState<ModuloPermissao[]>([]);
+  const [permissoes, setPermissoes] = useState<string[]>(() => {
+    // Tentar carregar permissões do localStorage como fallback
+    try {
+      const saved = localStorage.getItem('userPermissions');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [modulos, setModulos] = useState<ModuloPermissao[]>(() => {
+    // Tentar carregar módulos do localStorage como fallback
+    try {
+      const saved = localStorage.getItem('userModules');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(false);
+  const [permissoesCarregadas, setPermissoesCarregadas] = useState(false);
 
   // Função para buscar permissões do usuário via endpoint usuariopermissao/menu
   const fetchUserPermissions = useCallback(async () => {
@@ -131,6 +150,15 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
 
         console.log('🔐 Permissões geradas:', permissoesList);
         setPermissoes(permissoesList);
+        setPermissoesCarregadas(true);
+        
+        // Salvar no localStorage para fallback
+        try {
+          localStorage.setItem('userPermissions', JSON.stringify(permissoesList));
+          localStorage.setItem('userModules', JSON.stringify(modulosData));
+        } catch (error) {
+          console.warn('Erro ao salvar permissões no localStorage:', error);
+        }
       } else {
         console.warn('⚠️ Resposta da API não tem a estrutura esperada:', response);
         setPermissoes([]);
@@ -138,8 +166,28 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
       }
     } catch (error) {
       console.error('❌ Erro ao carregar permissões:', error);
-      setPermissoes([]);
-      setModulos([]);
+      
+      // Verificar se é um erro 503 (Service Unavailable)
+      const isServiceUnavailable = error instanceof Error && 
+        (error.message.includes('503') || error.message.includes('Service Unavailable'));
+      
+      if (isServiceUnavailable) {
+        console.log('🔄 Erro 503 detectado, tentando novamente em 3 segundos...');
+        // Se já temos permissões carregadas, manter elas e tentar novamente em background
+        if (permissoesCarregadas && permissoes.length > 0) {
+          console.log('📦 Mantendo permissões existentes durante erro 503');
+        }
+        // Tentar novamente após 3 segundos
+        setTimeout(() => {
+          console.log('🔄 Retentando carregamento de permissões...');
+          fetchUserPermissions();
+        }, 3000);
+      } else {
+        // Para outros erros, limpar permissões
+        setPermissoes([]);
+        setModulos([]);
+        setPermissoesCarregadas(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -339,15 +387,80 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
     await fetchUserPermissions();
   };
 
+  // Função para forçar carregamento de permissões (pública)
+  const forceLoadPermissions = async () => {
+    console.log('🔐 Forçando carregamento de permissões...');
+    await fetchUserPermissions();
+  };
+
+  // Função para limpar cache de permissões
+  const clearPermissionsCache = () => {
+    console.log('🧹 Limpando cache de permissões...');
+    setPermissoes([]);
+    setModulos([]);
+    setPermissoesCarregadas(false);
+    try {
+      localStorage.removeItem('userPermissions');
+      localStorage.removeItem('userModules');
+    } catch (error) {
+      console.warn('Erro ao limpar cache do localStorage:', error);
+    }
+  };
+
   // Buscar permissões quando usuário ou filial mudarem
   useEffect(() => {
     if (user?.id && filialAtual?.id) {
+      console.log('🔄 Iniciando carregamento de permissões...', { userId: user.id, filialId: filialAtual.id });
       fetchUserPermissions();
     } else {
+      console.log('⚠️ Usuário ou filial não disponível, limpando permissões');
       setPermissoes([]);
       setModulos([]);
     }
-  }, [user?.id, filialAtual?.id, fetchUserPermissions]);
+  }, [user?.id, filialAtual?.id]);
+
+  // Escutar evento de login para forçar carregamento de permissões
+  useEffect(() => {
+    const handleUserLoggedIn = (event: CustomEvent) => {
+      const { userId, filialId } = event.detail;
+      console.log('🔐 Evento de login recebido, forçando carregamento de permissões...', { userId, filialId });
+      
+      // Limpar cache anterior
+      setPermissoes([]);
+      setModulos([]);
+      setPermissoesCarregadas(false);
+      
+      // Aguardar um pouco para garantir que o estado foi atualizado
+      setTimeout(() => {
+        console.log('🔄 Executando carregamento forçado de permissões...');
+        fetchUserPermissions();
+      }, 200);
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLoggedIn as EventListener);
+    
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLoggedIn as EventListener);
+    };
+  }, [fetchUserPermissions]);
+
+  // Verificar se as permissões estão vazias quando usuário e filial estão disponíveis
+  useEffect(() => {
+    if (user?.id && filialAtual?.id && permissoes.length === 0 && !loading && !permissoesCarregadas) {
+      console.log('🔍 Permissões vazias detectadas, forçando carregamento...', { 
+        userId: user.id, 
+        filialId: filialAtual.id,
+        permissoesLength: permissoes.length,
+        loading,
+        permissoesCarregadas
+      });
+      
+      // Aguardar um pouco e tentar carregar novamente
+      setTimeout(() => {
+        fetchUserPermissions();
+      }, 500);
+    }
+  }, [user?.id, filialAtual?.id, permissoes.length, loading, permissoesCarregadas, fetchUserPermissions]);
 
   const value: PermissoesUsuarioContextType = {
     permissoes,
@@ -376,6 +489,8 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
     hasIntegracoesAccess,
     hasAuditoriaAccess,
     refreshPermissions,
+    forceLoadPermissions,
+    clearPermissionsCache,
   };
 
   return (

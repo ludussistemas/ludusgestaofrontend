@@ -1,6 +1,7 @@
 
 import { Cliente } from '@/types/cliente';
 import { toast } from 'sonner';
+import { useCallback } from 'react';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
 import { api, ApiResponse } from '../lib/api';
 
@@ -10,7 +11,7 @@ export const useClientes = () => {
     transformPagination: (pagination) => pagination
   });
 
-  const getClienteById = (id: string) => baseHook.data.find(c => c.id === id);
+  const getClienteById = useCallback((id: string) => baseHook.data.find(c => c.id === id), [baseHook.data]);
 
   const getClientesForSearch = async () => {
     await baseHook.fetchData({ limit: 1000 });

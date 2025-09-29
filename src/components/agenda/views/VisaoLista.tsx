@@ -1,14 +1,14 @@
 import { Badge } from '@/components/ui/badge';
 import { useContextoAgenda } from '@/contexts/AgendaContext';
 import { useLocais } from '@/hooks/useLocais';
-import type { Evento } from '@/types/eventos';
+import type { Reserva } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { memo, useMemo } from 'react';
 
-function AgendaEvent({ evento, onClick }: { evento: Evento; onClick: (e: React.MouseEvent) => void }) {
-  const { buscarPorId } = useLocais();
-  const local = buscarPorId(evento.localId);
+function AgendaEvent({ evento, onClick }: { evento: Reserva; onClick: (e: React.MouseEvent) => void }) {
+  const { getLocalById } = useLocais();
+  const local = getLocalById(evento.localId);
   
   return (
     <div

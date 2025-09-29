@@ -31,7 +31,7 @@ const Recebivel = () => {
   const isEdit = !!id;
 
   const { getClienteById, clientes } = useClientes();
-  const { buscarPorId, createRecebivel, updateRecebivel } = useRecebiveis();
+  const { getRecebivelById, createRecebivel, updateRecebivel } = useRecebiveis();
 
   const [formData, setFormData] = useState<RecebivelFormData>({
     clienteId: '',
@@ -47,7 +47,7 @@ const Recebivel = () => {
     if (isEdit && id) {
       const carregarRecebivel = async () => {
         try {
-          const recebivel = await buscarPorId(id);
+          const recebivel = await getRecebivelById(id);
           if (recebivel) {
             setFormData({
               clienteId: recebivel.clienteId,
@@ -64,7 +64,7 @@ const Recebivel = () => {
       };
       carregarRecebivel();
     }
-  }, [isEdit, id, buscarPorId]);
+  }, [isEdit, id, getRecebivelById]);
 
   // Dados usando hooks
   const clientesExemplo = clientes.map(cliente => ({

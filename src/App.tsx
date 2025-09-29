@@ -111,6 +111,7 @@ function App() {
           {/* Rotas de Eventos */}
           <Route path="/eventos" element={<Events />} />
           <Route path="/eventos/agenda" element={<Agenda />} />
+          <Route path="/eventos/reserva" element={<Reserva />} />
           <Route path="/eventos/reserva/novo" element={<Reserva />} />
           <Route path="/eventos/reserva/:id/editar" element={<Reserva />} />
           <Route path="/eventos/clientes" element={<Clientes />} />

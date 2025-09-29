@@ -128,7 +128,7 @@ const ListaLocaisAgenda = memo(({
           placeholder="Filtrar locais..."
           value={consulta}
           onChange={(e) => setConsulta(e.target.value)}
-          className="pl-9 h-9 text-sm border-border/50 bg-white/80"
+          className="pl-9 h-9 text-sm border-border/50 bg-muted/80"
           disabled={loading || locaisLoading}
         />
       </div>

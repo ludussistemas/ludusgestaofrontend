@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useContextoAgenda } from '@/contexts/AgendaContext';
 import { useLocais } from '@/hooks/useLocais';
 import { cn } from '@/lib/utils';
-import type { Evento } from '@/types/eventos';
+import type { Reserva } from '@/types';
 import { eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, startOfMonth, startOfWeek } from 'date-fns';
 import { memo, useMemo } from 'react';
 
@@ -52,7 +52,7 @@ function AgendaCell({
       tabIndex={0}
       className={cn(
         "relative flex flex-col w-full h-full min-h-0 rounded-lg bg-white/80 shadow-sm border border-border p-0.5 transition-all duration-200 outline-none focus:ring-2 focus:ring-primary/40 hover:shadow-md overflow-hidden",
-        isForaDoMes ? "bg-muted/30 text-muted-foreground/50 border-dashed opacity-60 cursor-not-allowed" : "cursor-pointer hover:bg-accent/10",
+        isForaDoMes ? "bg-muted/30 text-muted-foreground/50 border-dashed opacity-60 cursor-not-allowed" : "cursor-pointer hover:bg-accent/10 bg-muted/80",
         isHoje && "ring-2 ring-primary/60 border-primary"
       )}
       onClick={e => {
@@ -83,13 +83,13 @@ function AgendaCell({
   );
 }
 
-function AgendaEvent({ evento, onClick }: { evento: Evento; onClick: (e: React.MouseEvent) => void }) {
-  const { buscarPorId } = useLocais();
-  const local = buscarPorId(evento.localId);
+function AgendaEvent({ evento, onClick }: { evento: Reserva; onClick: (e: React.MouseEvent) => void }) {
+  const { getLocalById } = useLocais();
+  const local = getLocalById(evento.localId);
   
   return (
     <div
-      className="mb-0.5 rounded-sm bg-white shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-all duration-200 flex items-center px-1.5 py-1"
+      className="mb-0.5 rounded-sm bg-white shadow-sm border border-muted cursor-pointer hover:shadow-md transition-all duration-200 flex items-center px-1.5 py-1"
       style={{
         backgroundColor: local?.cor || evento.cor,
         color: '#fff',
@@ -107,8 +107,8 @@ function AgendaEvent({ evento, onClick }: { evento: Evento; onClick: (e: React.M
       onClick={onClick}
     >
       <div className="flex items-center justify-between w-full">
-        <div className="font-semibold truncate text-[10px] leading-tight flex-1 mr-1 text-white">{evento.cliente?.nome || 'Cliente não informado'}</div>
-        <div className="text-[9px] font-medium leading-tight flex-shrink-0 text-white">{evento.dataInicio?.split('T')[1]?.substring(0, 5) || ''}-{evento.dataFim?.split('T')[1]?.substring(0, 5) || ''}</div>
+        <div className="font-semibold truncate text-[10px] leading-tight flex-1 mr-1">{evento.cliente?.nome || 'Cliente não informado'}</div>
+        <div className="text-[9px] font-medium leading-tight flex-shrink-0">{evento.dataInicio?.split('T')[1]?.substring(0, 5) || ''}-{evento.dataFim?.split('T')[1]?.substring(0, 5) || ''}</div>
       </div>
     </div>
   );
@@ -140,7 +140,7 @@ function AgendaCellSkeleton({ isForaDoMes }: { isForaDoMes: boolean }) {
 // VISUALIZAÇÃO MENSAL REFACTORED
 
 const VisaoMensal = memo(() => {
-  const { buscarPorId } = useLocais();
+  const { getLocalById } = useLocais();
   const {
     dataAtual,
     eventosPorDiaELocal,

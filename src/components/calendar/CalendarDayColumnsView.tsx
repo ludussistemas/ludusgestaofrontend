@@ -73,7 +73,9 @@ const CalendarDayColumnsView = ({
               <div className="h-12 border-b border-gray-200 bg-gray-50 flex items-center justify-center">
                 <span className="text-xs font-medium text-gray-600">Horário</span>
               </div>
-              {timeSlots.map((time) => (
+              {timeSlots.map((slot) => {
+                const time = slot.time;
+                return (
                 <div 
                   key={time} 
                   className="border-b border-gray-100 flex items-center justify-center px-2"
@@ -83,7 +85,8 @@ const CalendarDayColumnsView = ({
                     {time}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Colunas dos locais */}
@@ -99,7 +102,8 @@ const CalendarDayColumnsView = ({
                   
                   {/* Time slots grid */}
                   <div className="relative">
-                    {timeSlots.map((time) => {
+                    {timeSlots.map((slot) => {
+                      const time = slot.time;
                       const slotStart = timeToMinutes(time);
                       const slotEnd = slotStart + local.interval;
                       

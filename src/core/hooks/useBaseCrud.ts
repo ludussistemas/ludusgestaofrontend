@@ -157,11 +157,13 @@ export function useBaseCrud<T>(
     } catch (error: any) {
       console.error('❌ Erro ao buscar dados do backend:', error);
       
-      // Verificar se é um erro de timeout ou conexão
+      // Verificar se é um erro de timeout, conexão ou serviço indisponível
       const isTimeoutOrNetworkError = error?.message?.includes('Tempo limite') || 
                                      error?.message?.includes('Erro de conexão') ||
                                      error?.message?.includes('timeout') ||
-                                     error?.message?.includes('network');
+                                     error?.message?.includes('network') ||
+                                     error?.message?.includes('503') ||
+                                     error?.message?.includes('Service Unavailable');
       
       if (isTimeoutOrNetworkError) {
         // Mostrar toast com botão de retry para timeouts e erros de rede
@@ -207,9 +209,13 @@ export function useBaseCrud<T>(
     } catch (error: any) {
       console.error('Erro ao excluir item:', error);
       
-      // Verificar se é um erro de timeout ou conexão
+      // Verificar se é um erro de timeout, conexão ou serviço indisponível
       const isTimeoutOrNetworkError = error?.message?.includes('Tempo limite') || 
-                                     error?.message?.includes('Erro de conexão');
+                                     error?.message?.includes('Erro de conexão') ||
+                                     error?.message?.includes('timeout') ||
+                                     error?.message?.includes('network') ||
+                                     error?.message?.includes('503') ||
+                                     error?.message?.includes('Service Unavailable');
       
       if (isTimeoutOrNetworkError) {
         toast.error(error.message || 'Erro de conexão ao excluir', {
@@ -236,9 +242,13 @@ export function useBaseCrud<T>(
     } catch (error: any) {
       console.error('Erro ao criar item:', error);
       
-      // Verificar se é um erro de timeout ou conexão
+      // Verificar se é um erro de timeout, conexão ou serviço indisponível
       const isTimeoutOrNetworkError = error?.message?.includes('Tempo limite') || 
-                                     error?.message?.includes('Erro de conexão');
+                                     error?.message?.includes('Erro de conexão') ||
+                                     error?.message?.includes('timeout') ||
+                                     error?.message?.includes('network') ||
+                                     error?.message?.includes('503') ||
+                                     error?.message?.includes('Service Unavailable');
       
       if (isTimeoutOrNetworkError) {
         toast.error(error.message || 'Erro de conexão ao criar', {
@@ -265,9 +275,13 @@ export function useBaseCrud<T>(
     } catch (error: any) {
       console.error('Erro ao atualizar item:', error);
       
-      // Verificar se é um erro de timeout ou conexão
+      // Verificar se é um erro de timeout, conexão ou serviço indisponível
       const isTimeoutOrNetworkError = error?.message?.includes('Tempo limite') || 
-                                     error?.message?.includes('Erro de conexão');
+                                     error?.message?.includes('Erro de conexão') ||
+                                     error?.message?.includes('timeout') ||
+                                     error?.message?.includes('network') ||
+                                     error?.message?.includes('503') ||
+                                     error?.message?.includes('Service Unavailable');
       
       if (isTimeoutOrNetworkError) {
         toast.error(error.message || 'Erro de conexão ao atualizar', {
@@ -294,9 +308,13 @@ export function useBaseCrud<T>(
     } catch (error: any) {
       console.error('Erro ao buscar item:', error);
       
-      // Verificar se é um erro de timeout ou conexão
+      // Verificar se é um erro de timeout, conexão ou serviço indisponível
       const isTimeoutOrNetworkError = error?.message?.includes('Tempo limite') || 
-                                     error?.message?.includes('Erro de conexão');
+                                     error?.message?.includes('Erro de conexão') ||
+                                     error?.message?.includes('timeout') ||
+                                     error?.message?.includes('network') ||
+                                     error?.message?.includes('503') ||
+                                     error?.message?.includes('Service Unavailable');
       
       if (isTimeoutOrNetworkError) {
         toast.error(error.message || 'Erro de conexão ao buscar', {

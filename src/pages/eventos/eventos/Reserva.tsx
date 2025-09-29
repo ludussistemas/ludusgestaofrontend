@@ -18,12 +18,13 @@ import { useClientes } from '@/hooks/useClientes';
 import { useLocais } from '@/hooks/useLocais';
 import { useReservas } from '@/hooks/useReservas';
 import { CreditCard, Edit, Plus, Repeat, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface ReservationFormData {
-  client: string;
-  venue: string;
+  client: string | { id: string; label: string; subtitle: string } | null;
+  venue: string | { id: string; label: string; subtitle: string } | null;
   date: Date | undefined;
   startTime: string;
   endTime: string;
@@ -68,7 +69,7 @@ const Reserva = () => {
   // Hooks de dados
   const { getClientesForSearch, getClienteById, data: clientes, fetchData: fetchClientes } = useClientes();
   const { data: locais, getLocalById, getLocaisForSearch, fetchData: fetchLocais } = useLocais();
-  const { getReservaById, createReserva, updateReserva, deleteReserva, fetchData: fetchReservas } = useReservas();
+  const { getReservaById, createReserva, updateReserva, deleteReserva, fetchData: fetchReservas, getReserva, fetchReservasPorPeriodo, data: reservas } = useReservas();
 
   // Dados usando hooks
   const [clientesExemplo, setClientesExemplo] = useState<{ id: string; label: string; subtitle: string; }[]>([]);
@@ -89,6 +90,18 @@ const Reserva = () => {
         console.log('Dados carregados dos hooks');
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        
+        // Mostrar toast de erro
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados';
+        if (errorMessage.includes('503') || errorMessage.includes('Service Unavailable')) {
+          toast.error('Serviço temporariamente indisponível. Algumas funcionalidades podem não estar disponíveis.', {
+            duration: 5000,
+          });
+        } else {
+          toast.error('Erro ao carregar dados. Verifique sua conexão.', {
+            duration: 5000,
+          });
+        }
       }
     };
     loadData();
@@ -125,25 +138,36 @@ const Reserva = () => {
       setIsEdit(true);
       setEditingEventId(parseInt(id));
       
-      // Aguardar carregamento dos dados antes de carregar a reserva
+      // Carregar dados da reserva diretamente da API
       const loadReservaData = async () => {
         try {
-          // Aguardar um pouco para garantir que os dados foram carregados
-          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log('Buscando reserva com ID:', id);
           
-          // Carregar dados reais da reserva
-          const reserva = getReservaById(id);
+          // Buscar reserva diretamente da API
+          const reserva = await getReserva(id!);
+          console.log('Reserva carregada da API:', reserva);
+          
           if (reserva) {
             // Buscar cliente e local pelos IDs corretos
             const cliente = getClienteById(reserva.clienteId);
             const local = getLocalById(reserva.localId);
+            console.log('Cliente encontrado:', cliente);
+            console.log('Local encontrado:', local);
             
             const mockData = {
-              client: cliente?.id || reserva.clienteId, // Usar ID do cliente para funcionar com seleção
-              venue: local?.id || reserva.localId, // Usar ID do local para funcionar com seleção
-          date: new Date(reserva.dataInicio),
-          startTime: reserva.dataInicio?.split('T')[1]?.substring(0, 5) || '',
-          endTime: reserva.dataFim?.split('T')[1]?.substring(0, 5) || '',
+              client: cliente ? {
+                id: cliente.id,
+                label: cliente.nome,
+                subtitle: cliente.documento || cliente.email || ''
+              } : null,
+              venue: local ? {
+                id: local.id,
+                label: local.nome,
+                subtitle: local.descricao || local.nome
+              } : null,
+              date: new Date(reserva.dataInicio),
+              startTime: reserva.dataInicio?.split('T')[1]?.substring(0, 5) || '',
+              endTime: reserva.dataFim?.split('T')[1]?.substring(0, 5) || '',
               notes: reserva.observacoes || '',
               observations: reserva.observacoes || '',
               amount: reserva.valor.toString(),
@@ -154,10 +178,25 @@ const Reserva = () => {
               totalHours: 0,
               totalMinutes: 0
             };
+            console.log('Dados do formulário definidos:', mockData);
             setFormData(mockData);
+          } else {
+            console.error('Reserva não encontrada com ID:', id);
           }
         } catch (error) {
           console.error('Erro ao carregar dados da reserva:', error);
+          
+          // Mostrar toast de erro
+          const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar reserva';
+          if (errorMessage.includes('503') || errorMessage.includes('Service Unavailable')) {
+            toast.error('Serviço temporariamente indisponível. Tente novamente em alguns minutos.', {
+              duration: 5000,
+            });
+          } else {
+            toast.error('Erro ao carregar dados da reserva. Verifique sua conexão.', {
+              duration: 5000,
+            });
+          }
         }
       };
       
@@ -172,7 +211,7 @@ const Reserva = () => {
         }));
       }
     }
-  }, [id, searchParams, getReservaById, getClienteById, getLocalById, clientesExemplo, locaisExemplo]);
+  }, [id, searchParams, getReserva]);
 
   // Calcular total de horas e minutos
   useEffect(() => {
@@ -198,19 +237,91 @@ const Reserva = () => {
     }
   }, [formData.startTime, formData.endTime]);
 
+  const totalValue = formData.totalHours * formData.hourlyRate;
+
+  // Funções auxiliares para extrair IDs dos objetos
+  const getClientId = useCallback(() => {
+    return typeof formData.client === 'object' ? formData.client?.id : formData.client;
+  }, [formData.client]);
+
+  const getVenueId = useCallback(() => {
+    return typeof formData.venue === 'object' ? formData.venue?.id : formData.venue;
+  }, [formData.venue]);
+
   // Atualizar taxa horária baseado no local selecionado
   useEffect(() => {
-    const selectedVenue = locais.find(v => v.id === formData.venue);
-    if (selectedVenue) {
-      setFormData(prev => ({ ...prev, hourlyRate: selectedVenue.valorHora }));
+    if (Array.isArray(locais) && locais.length > 0) {
+      const venueId = getVenueId();
+      const selectedVenue = locais.find(v => v.id === venueId);
+      if (selectedVenue) {
+        setFormData(prev => ({ ...prev, hourlyRate: selectedVenue.valorHora }));
+      }
     }
-  }, [formData.venue, locais]);
+  }, [getVenueId, locais]);
 
-  const totalValue = formData.totalHours * formData.hourlyRate;
+  // Função para buscar reservas por data e local
+  const buscarReservasTimeline = useCallback(async (data: Date, localId?: string) => {
+    if (!data) return;
+    
+    try {
+      setTimelineLoading(true);
+      const dataInicio = data.toISOString().split('T')[0];
+      const dataFim = dataInicio; // Mesmo dia
+      
+      console.log('🔍 Buscando reservas para timeline:', { dataInicio, localId });
+      
+      // Buscar reservas por período e local
+      const localIds = localId ? [localId] : undefined;
+      await fetchReservasPorPeriodo(dataInicio, dataFim, localIds);
+      
+      // Aplicar filtro por local no frontend se necessário
+      const reservasFiltradas = localId ? 
+        reservas.filter(reserva => reserva.localId === localId) : 
+        reservas;
+      
+      // Mapear para formato da timeline
+      const eventosTimeline = reservasFiltradas.map(reserva => {
+        const cliente = getClienteById(reserva.clienteId);
+        const local = getLocalById(reserva.localId);
+        
+        return {
+          id: reserva.id,
+          client: cliente?.nome || 'Cliente não encontrado',
+          venue: local?.nome || 'Local não encontrado',
+          startTime: reserva.dataInicio?.split('T')[1]?.substring(0, 5) || '',
+          endTime: reserva.dataFim?.split('T')[1]?.substring(0, 5) || '',
+          status: reserva.situacao === 1 ? 'confirmed' : 'pending',
+          color: reserva.situacao === 1 ? '#10b981' : '#f59e0b',
+          sport: local?.tipo || '',
+          notes: reserva.observacoes || ''
+        };
+      });
+      
+      console.log('📅 Eventos carregados para timeline:', eventosTimeline);
+      setTimelineEvents(eventosTimeline);
+    } catch (error) {
+      console.error('Erro ao buscar reservas para timeline:', error);
+      setTimelineEvents([]);
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, [fetchReservasPorPeriodo, reservas, getClienteById, getLocalById]);
+
+  // Buscar reservas para timeline quando data ou local mudarem
+  useEffect(() => {
+    if (formData.date) {
+      const localId = getVenueId();
+      buscarReservasTimeline(formData.date, localId);
+    }
+  }, [formData.date, formData.venue, buscarReservasTimeline, getVenueId]);
 
   // Função para calcular horário final baseado no intervalo do local
   const calculateEndTime = (startTime: string, venueId: string) => {
     if (!startTime || !venueId) return '';
+    
+    if (!Array.isArray(locais) || locais.length === 0) {
+      return '';
+    }
     
     const selectedVenue = locais.find(l => l.id === venueId);
     if (!selectedVenue) {
@@ -259,6 +370,10 @@ const Reserva = () => {
     const reservationsForDate: any[] = []; // TODO: Implementar busca de reservas por data
     
     // Buscar local pelos dados de locais
+    if (!Array.isArray(locais) || locais.length === 0) {
+      return [];
+    }
+    
     const selectedVenue = locais.find(l => l.id === formData.venue);
     
     if (!selectedVenue) {
@@ -296,6 +411,15 @@ const Reserva = () => {
 
   // Obter configurações do local selecionado
   const getSelectedVenueConfig = () => {
+    // Verificar se locais é um array válido
+    if (!Array.isArray(locais) || locais.length === 0) {
+      return {
+        interval: 30,
+        minTime: "07:00",
+        maxTime: "21:00"
+      };
+    }
+    
     const selectedVenue = locais.find(l => l.id === formData.venue);
     if (!selectedVenue) {
       return {
@@ -314,10 +438,10 @@ const Reserva = () => {
   const venueConfig = getSelectedVenueConfig();
   const occupiedTimes = getOccupiedTimes();
 
-  // Eventos mockados usando hook - mapeando corretamente para o timeline
+  // Buscar reservas reais por data e local
   const selectedDateStr = formData.date ? formData.date.toISOString().split('T')[0] : '';
-  const mockEvents: any[] = []; // TODO: Implementar busca de reservas por data
-  const events = mockEvents.map(reservation => ({
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const events = timelineEvents.map(reservation => ({
     id: reservation.id,
     client: reservation.client,
     venue: reservation.venue,
@@ -333,8 +457,12 @@ const Reserva = () => {
   const getSelectedVenueName = () => {
     if (!formData.venue) return '';
     
-    const selectedVenue = locais.find(l => l.id === formData.venue);
-    console.log('getSelectedVenueName - formData.venue:', formData.venue);
+    if (!Array.isArray(locais) || locais.length === 0) {
+      return '';
+    }
+    
+    const selectedVenue = locais.find(l => l.id === getVenueId());
+    console.log('getSelectedVenueName - formData.venue:', getVenueId());
     console.log('getSelectedVenueName - selectedVenue:', selectedVenue);
     console.log('getSelectedVenueName - returning:', selectedVenue?.nome || '');
     return selectedVenue?.nome || '';
@@ -403,8 +531,8 @@ const Reserva = () => {
     if (isEdit && id) {
       // Atualizar reserva existente
       const updateData = {
-        clienteId: formData.client,
-        localId: formData.venue,
+        clienteId: getClientId(),
+        localId: getVenueId(),
         dataInicio: formData.date && formData.startTime ? 
           `${formData.date.toISOString().split('T')[0]}T${formData.startTime}:00Z` : '',
         dataFim: formData.date && formData.endTime ? 
@@ -416,12 +544,12 @@ const Reserva = () => {
       console.log('Editando reserva:', updateData);
     } else {
       // Criar nova reserva
-      const cliente = getClienteById(formData.client);
-      const local = getLocalById(formData.venue);
+      const cliente = getClienteById(getClientId());
+      const local = getLocalById(getVenueId());
       
       const newReservaData = {
-        clienteId: formData.client,
-        localId: formData.venue,
+        clienteId: getClientId(),
+        localId: getVenueId(),
         dataInicio: formData.date && formData.startTime ? 
           `${formData.date.toISOString().split('T')[0]}T${formData.startTime}:00Z` : '',
         dataFim: formData.date && formData.endTime ? 
@@ -531,7 +659,8 @@ const Reserva = () => {
                     <CampoBusca
                       id="client"
                       label="Cliente"
-                      value={formData.client}
+                      value={typeof formData.client === 'object' ? formData.client?.label || '' : formData.client || ''}
+                      selectedId={typeof formData.client === 'object' ? formData.client?.id : formData.client}
                       onChange={(value, item) => {
                         setFormData(prev => ({ ...prev, client: item?.id || value }));
                       }}
@@ -560,7 +689,8 @@ const Reserva = () => {
                 <CampoBusca
                   id="venue"
                   label="Local"
-                  value={formData.venue}
+                  value={typeof formData.venue === 'object' ? formData.venue?.label || '' : formData.venue || ''}
+                  selectedId={typeof formData.venue === 'object' ? formData.venue?.id : formData.venue}
                   onChange={handleVenueChange}
                   items={locaisExemplo}
                   displayField="label"
@@ -582,7 +712,7 @@ const Reserva = () => {
                     label="Início"
                     value={formData.startTime}
                     onChange={(time) => {
-                      const endTime = calculateEndTime(time, formData.venue);
+                      const endTime = calculateEndTime(time, getVenueId());
                       setFormData(prev => ({ 
                         ...prev, 
                         startTime: time,
@@ -717,7 +847,7 @@ const Reserva = () => {
                     type="submit"
                     onClick={handleSubmit}
                     className="flex-1"
-                    disabled={!formData.client || !formData.venue || !formData.date || !formData.startTime || !formData.endTime}
+                    disabled={!getClientId() || !getVenueId() || !formData.date || !formData.startTime || !formData.endTime}
                   >
                     {isEdit ? 'Atualizar' : 'Salvar'} Reserva
                   </Button>
@@ -730,7 +860,7 @@ const Reserva = () => {
                           variant="outline"
                           onClick={handleReserveNow}
                           className="px-3"
-                          disabled={!formData.client || !formData.venue || !formData.date || !formData.startTime || !formData.endTime}
+                          disabled={!getClientId() || !getVenueId() || !formData.date || !formData.startTime || !formData.endTime}
                         >
                           <CreditCard className="h-4 w-4" />
                         </Button>
@@ -759,12 +889,12 @@ const Reserva = () => {
               <CardContent className="h-full p-0 flex flex-col">
                 <EventTimeline
                   selectedDate={selectedDateStr}
-                  events={mockEvents}
+                  events={events}
                   selectedVenue={getSelectedVenueName()}
                   loading={timelineLoading}
                   onTimeSlotClick={(time) => {
                     if (!isEdit && formData.venue) {
-                      const endTime = calculateEndTime(time, formData.venue);
+                      const endTime = calculateEndTime(time, getVenueId());
                       setFormData(prev => ({ 
                         ...prev, 
                         startTime: time,
@@ -774,7 +904,7 @@ const Reserva = () => {
                   }}
                   onEventEdit={(event) => {
                     // Buscar o local pelo nome do evento para obter o ID correto
-                    const eventVenue = locais.find(l => l.nome === event.venue);
+                    const eventVenue = Array.isArray(locais) ? locais.find(l => l.nome === event.venue) : null;
                     const selectedClient = getClienteById(event.client);
                     
                     setFormData(prev => ({
@@ -793,7 +923,7 @@ const Reserva = () => {
                   editingEventId={editingEventId}
                   onEventSelect={(event) => {
                     // Buscar o local pelo nome do evento para obter o ID correto
-                    const eventVenue = locais.find(l => l.nome === event.venue);
+                    const eventVenue = Array.isArray(locais) ? locais.find(l => l.nome === event.venue) : null;
                     const selectedClient = getClienteById(event.client);
                     
                     setFormData(prev => ({

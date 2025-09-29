@@ -26,7 +26,8 @@ export function useAgenda() {
   const {
     data: reservas,
     loading: reservasLoading,
-    fetchData: fetchReservas
+    fetchData: fetchReservas,
+    fetchReservasPorPeriodo
   } = useReservas();
 
   // Estado de carregamento da restauração
@@ -241,44 +242,27 @@ export function useAgenda() {
 
   // Função para buscar reservas só quando necessário
   const buscarReservasAgenda = useCallback(async () => {
-    // Construir o filtro como array com property, operator e value
-    const filters = [];
-    
     if (filtrosReservas.dataInicio && filtrosReservas.dataFim) {
-      const dataInicio = filtrosReservas.dataInicio.toISOString().split('T')[0];
-      const dataFim = filtrosReservas.dataFim.toISOString().split('T')[0];
-      
-      filters.push({
-        property: 'dataInicio',
-        operator: 'between',
-        value: `${dataInicio}:${dataFim}`
-      });
+      try {
+        const dataInicio = filtrosReservas.dataInicio.toISOString().split('T')[0];
+        const dataFim = filtrosReservas.dataFim.toISOString().split('T')[0];
+        
+        console.log('🔄 Buscando reservas para período:', { dataInicio, dataFim, locaisSelecionados });
+        
+        await fetchReservasPorPeriodo(dataInicio, dataFim, locaisSelecionados);
+        
+        setUltimaConsulta({
+          tipoVisualizacao,
+          dataInicio: filtrosReservas.dataInicio!,
+          dataFim: filtrosReservas.dataFim!,
+          localIds: filtrosReservas.localIds
+        });
+      } catch (error) {
+        console.error('Erro ao buscar reservas da agenda:', error);
+        // O erro já foi tratado no fetchReservasPorPeriodo com toast
+      }
     }
-    
-    // Adicionar filtro de local se especificado
-    if (filtrosReservas.localIds && filtrosReservas.localIds.length === 1) {
-      filters.push({
-        property: 'localId',
-        operator: 'equals',
-        value: filtrosReservas.localIds[0]
-      });
-    }
-
-    const filtros = {
-      page: 1,
-      limit: 1000,
-      search: filters.length > 0 ? JSON.stringify(filters) : undefined
-    };
-    
-    console.log('🔄 Filtros para busca de reservas:', filtros);
-    await fetchReservas(filtros);
-    setUltimaConsulta({
-      tipoVisualizacao,
-      dataInicio: filtrosReservas.dataInicio!,
-      dataFim: filtrosReservas.dataFim!,
-      localIds: filtrosReservas.localIds
-    });
-  }, [fetchReservas, filtrosReservas, tipoVisualizacao]);
+  }, [fetchReservasPorPeriodo, filtrosReservas, tipoVisualizacao]);
 
   useEffect(() => {
     if (deveFazerConsulta) {
@@ -365,7 +349,7 @@ export function useAgenda() {
     return locaisSelecionados.includes(localId);
   }, [locaisSelecionados]);
 
-  // Organizar reservas por dia para visualizações (já filtrados por período e local)
+  // Organizar reservas por dia para visualizações (filtrados por período e local no frontend)
   const reservasPorDiaELocal = useMemo(() => {
     const organizados: Record<string, Reserva[]> = {};
     
@@ -394,7 +378,14 @@ export function useAgenda() {
           }
           
           const dataReserva = reserva.dataInicio.split('T')[0];
-          return isSameDay(parseISO(dataReserva), dia);
+          const mesmoDia = isSameDay(parseISO(dataReserva), dia);
+          
+          // Aplicar filtro por local no frontend quando necessário
+          // (quando há 2+ locais selecionados ou "all")
+          const localSelecionado = locaisSelecionados.includes('all') || 
+                                 locaisSelecionados.includes(reserva.localId);
+          
+          return mesmoDia && localSelecionado;
         } catch (error) {
           console.warn('Erro ao parsear data da reserva:', reserva, error);
           return false;
@@ -404,12 +395,25 @@ export function useAgenda() {
     });
     
     return organizados;
-  }, [reservasAgenda, tipoVisualizacao, dataAtual]);
+  }, [reservasAgenda, tipoVisualizacao, dataAtual, locaisSelecionados]);
+
+  // Calcular contadores de eventos por local
+  const eventCountByVenue = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    reservasAgenda.forEach(reserva => {
+      if (reserva.localId) {
+        counts[reserva.localId] = (counts[reserva.localId] || 0) + 1;
+      }
+    });
+    
+    return counts;
+  }, [reservasAgenda]);
 
   // Handlers de eventos
   const handleEventClick = useCallback((reserva: Reserva) => {
     console.log('Reserva clicada:', reserva);
-    // Implementar navegação para edição da reserva
+    // Navegar para página de edição da reserva
     navigate(`/eventos/reserva/${reserva.id}/editar`);
   }, [navigate]);
 
@@ -474,6 +478,7 @@ export function useAgenda() {
     locais,
     eventos: reservasAgenda, // Mantém compatibilidade com componentes existentes
     eventosPorDiaELocal: reservasPorDiaELocal, // Mantém compatibilidade
+    eventCountByVenue, // Contadores de eventos por local
     loading,
     
     // Métodos de navegação
