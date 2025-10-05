@@ -8,7 +8,7 @@ function ConteudoAgenda() {
   const agenda = useContextoAgenda();
 
   return (
-    <div className="h-screen min-h-screen flex flex-col bg-background text-foreground">
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       <ModuleHeader
         title="Agenda"
         icon={<CalendarIcon className="h-6 w-6" />}
@@ -16,7 +16,7 @@ function ConteudoAgenda() {
         backTo="/eventos"
         backLabel="Eventos"
       />
-      <main className="flex-1 flex flex-col h-full w-full min-w-0">
+      <main className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
         <LayoutAgenda />
       </main>
     </div>

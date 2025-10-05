@@ -1,4 +1,5 @@
 import { getSituacaoConfig } from '@/utils/enumUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar, Clock, DollarSign, Hash, IdCard, Mail, Percent, Phone } from 'lucide-react';
 import { TipoColuna } from './ListagemContext';
 
@@ -9,9 +10,33 @@ interface PropsCelula<T> {
   opcoesSituacao?: Record<string | number, { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }>;
   mapeamentoValores?: Record<string | number, string | number>;
   tipoEntidade?: 'recebivel' | 'cliente' | 'local' | 'reserva';
+  cortarTextoComQuantCaracteres?: number; // Propriedade para controlar truncamento
+  centralizar?: boolean; // Propriedade para controlar centralização
 }
 
-export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeamentoValores, tipoEntidade }: PropsCelula<T>) {
+// Função auxiliar para renderizar texto com truncamento e tooltip
+function TextoComTooltip({ texto, maxLength = 30 }: { texto: string; maxLength?: number }) {
+  if (!texto || texto.length <= maxLength) {
+    return <span>{texto || '-'}</span>;
+  }
+
+  const textoTruncado = texto.substring(0, maxLength) + '...';
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help">{textoTruncado}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <p className="whitespace-pre-wrap break-words">{texto}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeamentoValores, tipoEntidade, cortarTextoComQuantCaracteres, centralizar = true }: PropsCelula<T>) {
   let valor = (item as any)[chave];
   
   // Aplicar mapeamento de valores se existir
@@ -126,19 +151,28 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
       outline: 'bg-blue-100 text-blue-800'
     };
 
+    const maxLength = cortarTextoComQuantCaracteres || 12;
+    const label = config.label.length > maxLength 
+      ? config.label.substring(0, maxLength) + '...' 
+      : config.label;
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[config.variant]}`}>
-        {config.label}
-      </span>
+      <div className={centralizar ? "flex justify-center" : ""}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[config.variant]}`}>
+          {label}
+        </span>
+      </div>
     );
   };
 
   const renderizarBadge = (valor: any) => {
     if (!valor) return '-';
     return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-        {valor}
-      </span>
+      <div className={centralizar ? "flex justify-center" : ""}>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {valor}
+        </span>
+      </div>
     );
   };
 
@@ -147,7 +181,7 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
       return (
         <div className="flex items-center gap-2">
           <Mail className="h-4 w-4 text-muted-foreground" />
-          <span>{valor || '-'}</span>
+          <TextoComTooltip texto={valor || ''} maxLength={cortarTextoComQuantCaracteres || 25} />
         </div>
       );
 
@@ -155,7 +189,7 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
       return (
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground" />
-          <span>{formatarTelefone(valor)}</span>
+          <TextoComTooltip texto={formatarTelefone(valor)} maxLength={cortarTextoComQuantCaracteres || 15} />
         </div>
       );
 
@@ -163,37 +197,37 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
       return (
         <div className="flex items-center gap-2">
           <IdCard className="h-4 w-4 text-muted-foreground" />
-          <span>{formatarDocumento(valor)}</span>
+          <TextoComTooltip texto={formatarDocumento(valor)} maxLength={cortarTextoComQuantCaracteres || 15} />
         </div>
       );
 
     case 'data':
       return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${centralizar ? 'justify-center' : ''}`}>
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{formatarData(valor)}</span>
+          <TextoComTooltip texto={formatarData(valor)} maxLength={cortarTextoComQuantCaracteres || 12} />
         </div>
       );
 
     case 'hora':
       return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${centralizar ? 'justify-center' : ''}`}>
           <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>{formatarHora(valor)}</span>
+          <TextoComTooltip texto={formatarHora(valor)} maxLength={cortarTextoComQuantCaracteres || 8} />
         </div>
       );
 
     case 'datahora':
       return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${centralizar ? 'justify-center' : ''}`}>
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{formatarDataHora(valor)}</span>
+          <TextoComTooltip texto={formatarDataHora(valor)} maxLength={cortarTextoComQuantCaracteres || 16} />
         </div>
       );
 
     case 'valor':
       return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${centralizar ? 'justify-center' : ''}`}>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
           <span>{formatarValor(valor)}</span>
         </div>
@@ -201,7 +235,7 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
 
     case 'numero':
       return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${centralizar ? 'justify-center' : ''}`}>
           <Hash className="h-4 w-4 text-muted-foreground" />
           <span>{formatarNumero(valor)}</span>
         </div>
@@ -209,7 +243,7 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
 
     case 'percentual':
       return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${centralizar ? 'justify-center' : ''}`}>
           <Percent className="h-4 w-4 text-muted-foreground" />
           <span>{formatarPercentual(valor)}</span>
         </div>
@@ -221,8 +255,18 @@ export function ListagemCelula<T>({ item, chave, tipo, opcoesSituacao, mapeament
     case 'badge':
       return renderizarBadge(valor);
 
+    case 'cor':
+      return (
+        <div className="flex items-center justify-center">
+          <div 
+            className="w-8 h-5 border rounded-md" 
+            style={{ backgroundColor: valor || '#3b82f6' }}
+          />
+        </div>
+      );
+
     case 'texto':
     default:
-      return <span>{valor || '-'}</span>;
+      return <TextoComTooltip texto={valor || ''} maxLength={cortarTextoComQuantCaracteres || 30} />;
   }
 } 

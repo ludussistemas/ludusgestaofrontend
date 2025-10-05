@@ -31,7 +31,7 @@ const Recebivel = () => {
   const isEdit = !!id;
 
   const { getClienteById, clientes } = useClientes();
-  const { getRecebivelById, createRecebivel, updateRecebivel } = useRecebiveis();
+  const { getRecebivelById, getRecebivel, createRecebivel, updateRecebivel } = useRecebiveis();
 
   const [formData, setFormData] = useState<RecebivelFormData>({
     clienteId: '',
@@ -47,7 +47,7 @@ const Recebivel = () => {
     if (isEdit && id) {
       const carregarRecebivel = async () => {
         try {
-          const recebivel = await getRecebivelById(id);
+          const recebivel = await getRecebivel(id);
           if (recebivel) {
             setFormData({
               clienteId: recebivel.clienteId,
@@ -60,11 +60,12 @@ const Recebivel = () => {
           }
         } catch (error) {
           console.error('Erro ao carregar recebível:', error);
+          toast.error('Erro ao carregar dados do recebível');
         }
       };
       carregarRecebivel();
     }
-  }, [isEdit, id, getRecebivelById]);
+  }, [isEdit, id, getRecebivel]);
 
   // Dados usando hooks
   const clientesExemplo = clientes.map(cliente => ({
@@ -103,12 +104,8 @@ const Recebivel = () => {
     }
 
     try {
-      // Buscar dados do cliente para incluir o nome
-      const cliente = await getClienteById(formData.clienteId);
-
       const recebivelData = {
         clienteId: formData.clienteId,
-        cliente: cliente.nome,
         descricao: formData.descricao,
         valor: parseFloat(formData.valor) || 0,
         dataVencimento: formData.dataVencimento.toISOString().split('T')[0],

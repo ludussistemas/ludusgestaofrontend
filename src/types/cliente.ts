@@ -6,6 +6,8 @@ import { SituacaoCliente } from './enums/situacao-cliente';
 
 export interface Cliente {
   id: string; // GUID
+  dataCriacao: string; // Data de criação
+  dataAtualizacao: string | null; // Data da última atualização
   nome: string;
   documento: string;
   email: string;
@@ -13,5 +15,5 @@ export interface Cliente {
   endereco: string;
   observacoes: string;
   situacao: SituacaoCliente; // Enum do backend
-  dataCriacao: string; // Padronizado com backend
+  tenantId: number; // ID do tenant
 } 

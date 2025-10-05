@@ -22,12 +22,14 @@ const Recebiveis = () => {
       hook={hook}
       colunas={[
         {
-          chave: 'cliente',
+          chave: 'clienteId',
           titulo: 'Cliente',
           ordenavel: true,
           filtravel: true,
           tipoFiltro: 'select',
-          tipo: 'texto'
+          renderizar: (recebivel) => recebivel.cliente?.nome || 'Cliente não encontrado',
+          tipo: 'texto',
+          visivelPorPadrao: true
         },
         {
           chave: 'descricao',
@@ -35,19 +37,31 @@ const Recebiveis = () => {
           ordenavel: true,
           filtravel: true,
           tipoFiltro: 'text',
-          tipo: 'texto'
+          tipo: 'texto',
+          cortarTextoComQuantCaracteres: 40,
+          visivelPorPadrao: true
         },
         {
           chave: 'valor',
           titulo: 'Valor',
           ordenavel: true,
-          tipo: 'valor'
+          renderizar: (recebivel) => `R$ ${recebivel.valor.toFixed(2)}`,
+          tipo: 'valor',
+          visivelPorPadrao: true
         },
         {
           chave: 'dataVencimento',
           titulo: 'Vencimento',
           ordenavel: true,
-          tipo: 'data'
+          tipo: 'data',
+          visivelPorPadrao: true
+        },
+        {
+          chave: 'reservaId',
+          titulo: 'Reserva',
+          renderizar: (recebivel) => recebivel.reservaId ? `#${recebivel.reservaId.substring(0, 8)}...` : 'N/A',
+          tipo: 'texto',
+          visivelPorPadrao: false
         },
         {
           chave: 'situacao',
@@ -56,12 +70,34 @@ const Recebiveis = () => {
           filtravel: true,
           tipoFiltro: 'select',
           tipo: 'situacao',
-          tipoEntidade: 'recebivel'
+          visivelPorPadrao: true,
+          mapeamentoValores: {
+            1: 'aberto',
+            2: 'pago',
+            3: 'vencido',
+            4: 'cancelado',
+            5: 'estornado'
+          },
+          opcoesSituacao: {
+            aberto: { label: 'Aberto', variant: 'default' },
+            pago: { label: 'Pago', variant: 'default' },
+            vencido: { label: 'Vencido', variant: 'destructive' },
+            cancelado: { label: 'Cancelado', variant: 'secondary' },
+            estornado: { label: 'Estornado', variant: 'outline' }
+          }
         },
         {
           chave: 'dataCriacao',
-          titulo: 'Data Criação',
+          titulo: 'Data Cadastro',
           ordenavel: true,
+          tipo: 'data',
+          visivelPorPadrao: true
+        },
+        {
+          chave: 'dataAtualizacao',
+          titulo: 'Última Atualização',
+          ordenavel: true,
+          renderizar: (recebivel) => recebivel.dataAtualizacao ? new Date(recebivel.dataAtualizacao).toLocaleDateString('pt-BR') : 'N/A',
           tipo: 'data'
         }
       ]}

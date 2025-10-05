@@ -27,44 +27,88 @@ export default function Clientes() {
           chave: 'nome',
           titulo: 'Nome',
           ordenavel: true,
-          tipo: 'texto'
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'texto',
+          visivelPorPadrao: true
         },
         {
           chave: 'email',
           titulo: 'E-mail',
           ordenavel: true,
-          tipo: 'email'
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'email',
+          visivelPorPadrao: true
         },
         {
           chave: 'telefone',
           titulo: 'Telefone',
-          tipo: 'telefone'
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'telefone',
+          visivelPorPadrao: true
         },
         {
           chave: 'documento',
           titulo: 'Documento',
-          tipo: 'documento'
+          ordenavel: true,
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'documento',
+          visivelPorPadrao: false
+        },
+        {
+          chave: 'endereco',
+          titulo: 'Endereço',
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'texto',
+          cortarTextoComQuantCaracteres: 35,
+          visivelPorPadrao: true
+        },
+        {
+          chave: 'observacoes',
+          titulo: 'Observações',
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'texto',
+          cortarTextoComQuantCaracteres: 40,
+          visivelPorPadrao: false
         },
         {
           chave: 'situacao',
           titulo: 'Situação',
           ordenavel: true,
+          filtravel: true,
+          tipoFiltro: 'select',
           tipo: 'situacao',
+          visivelPorPadrao: true,
           mapeamentoValores: {
             1: 'ativo',
-            0: 'inativo'
+            2: 'inativo',
+            3: 'bloqueado'
           },
           opcoesSituacao: {
             ativo: { label: 'Ativo', variant: 'default' },
-            inativo: { label: 'Inativo', variant: 'destructive' }
+            inativo: { label: 'Inativo', variant: 'destructive' },
+            bloqueado: { label: 'Bloqueado', variant: 'secondary' }
           }
         },
         {
           chave: 'dataCriacao',
           titulo: 'Data Cadastro',
           ordenavel: true,
-          tipo: 'data'
+          tipo: 'data',
+          visivelPorPadrao: true
         },
+        {
+          chave: 'dataAtualizacao',
+          titulo: 'Última Atualização',
+          ordenavel: true,
+          renderizar: (cliente) => cliente.dataAtualizacao ? new Date(cliente.dataAtualizacao).toLocaleDateString('pt-BR') : 'N/A',
+          tipo: 'data'
+        }
       ]}
       acoes={hasClientesAccess() ? [
         {

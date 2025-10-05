@@ -1,9 +1,10 @@
 import { useDebounce } from '@/hooks/use-debounce';
+import { useAuth } from '@/contexts/AuthContext';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // Tipos
-export type TipoColuna = 'texto' | 'email' | 'documento' | 'telefone' | 'data' | 'hora' | 'datahora' | 'situacao' | 'valor' | 'numero' | 'percentual' | 'badge';
+export type TipoColuna = 'texto' | 'email' | 'documento' | 'telefone' | 'data' | 'hora' | 'datahora' | 'situacao' | 'valor' | 'numero' | 'percentual' | 'badge' | 'cor';
 
 export interface ColunaListagem<T> {
   chave: keyof T | string;
@@ -14,10 +15,13 @@ export interface ColunaListagem<T> {
   podeOcultar?: boolean;
   renderizar?: (item: T) => React.ReactNode;
   largura?: number;
+  tamanhoMaximo?: number | null; // Tamanho máximo da coluna (nullable)
   tipo?: TipoColuna;
   opcoesSituacao?: Record<string | number, { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }>;
   mapeamentoValores?: Record<string | number, string | number>;
   tipoEntidade?: 'recebivel' | 'cliente' | 'local' | 'reserva';
+  visivelPorPadrao?: boolean; // Se a coluna deve aparecer por padrão
+  cortarTextoComQuantCaracteres?: number; // Quantidade de caracteres para truncar texto
 }
 
 export interface AcaoListagem<T> {
@@ -144,6 +148,7 @@ interface ContextoListagem<T> extends EstadoListagem<T> {
   definirOrdemColunas: (ordem: string[]) => void;
   definirTamanhoColuna: (chave: string, tamanho: number) => void;
   definirFixacaoColuna: (chave: string, posicao: 'left' | 'right' | null) => void;
+  resetarColunas: () => void;
   
   // Ações CRUD
   excluirItem: (item: T) => Promise<void>;
@@ -173,6 +178,14 @@ export function ListagemProvider<T extends Record<string, any>>({
   children: React.ReactNode;
   configuracao: ConfiguracaoListagem<T>;
 }) {
+  const { user } = useAuth();
+  
+  // Função auxiliar para gerar chave de armazenamento por usuário
+  const getChaveStorage = useCallback((sufixo: string) => {
+    const userId = user?.id || 'anonymous';
+    return `listagem_${configuracao.nomeEntidade.toLowerCase()}_${userId}_${sufixo}`;
+  }, [user?.id, configuracao.nomeEntidade]);
+  
   // Estados principais
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [tamanhoPagina, setTamanhoPagina] = useState(configuracao.tamanhoPaginaPadrao || 10);
@@ -185,7 +198,32 @@ export function ListagemProvider<T extends Record<string, any>>({
   
   // Estados de UI
   const [modoVisualizacao, setModoVisualizacao] = useState<'tabela' | 'grade'>('tabela');
-  const [visibilidadeColunas, setVisibilidadeColunas] = useState<Record<string, boolean>>({});
+  
+  // Configurações de colunas com persistência por usuário
+  const [visibilidadeColunas, setVisibilidadeColunas] = useState<Record<string, boolean>>(() => {
+    const userId = user?.id || 'anonymous';
+    const chaveStorage = `listagem_${configuracao.nomeEntidade.toLowerCase()}_${userId}_colunas`;
+    const salvo = localStorage.getItem(chaveStorage);
+    if (salvo) {
+      try {
+        return JSON.parse(salvo);
+      } catch {
+        // Se erro ao carregar, usar configuração padrão baseada em visivelPorPadrao
+        const padrao: Record<string, boolean> = {};
+        configuracao.colunas.forEach((coluna) => {
+          padrao[String(coluna.chave)] = coluna.visivelPorPadrao !== false;
+        });
+        return padrao;
+      }
+    }
+    // Configuração padrão baseada em visivelPorPadrao
+    const padrao: Record<string, boolean> = {};
+    configuracao.colunas.forEach((coluna) => {
+      padrao[String(coluna.chave)] = coluna.visivelPorPadrao !== false;
+    });
+    return padrao;
+  });
+  
   const [ordemColunas, setOrdemColunas] = useState<string[]>(
     configuracao.colunas.map(col => String(col.chave))
   );
@@ -284,6 +322,41 @@ export function ListagemProvider<T extends Record<string, any>>({
         .finally(() => setCarregandoResumo(false));
     }
   }, []); // Remover dependência do hook para evitar múltiplas chamadas
+  
+  // Recarregar configurações quando o usuário mudar
+  useEffect(() => {
+    const userId = user?.id || 'anonymous';
+    const chaveStorage = `listagem_${configuracao.nomeEntidade.toLowerCase()}_${userId}_colunas`;
+    const salvo = localStorage.getItem(chaveStorage);
+    
+    if (salvo) {
+      try {
+        const configuracaoSalva = JSON.parse(salvo);
+        setVisibilidadeColunas(configuracaoSalva);
+      } catch {
+        // Se erro ao carregar, usar configuração padrão
+        const padrao: Record<string, boolean> = {};
+        configuracao.colunas.forEach((coluna) => {
+          padrao[String(coluna.chave)] = coluna.visivelPorPadrao !== false;
+        });
+        setVisibilidadeColunas(padrao);
+      }
+    } else {
+      // Se não há configuração salva, usar padrão
+      const padrao: Record<string, boolean> = {};
+      configuracao.colunas.forEach((coluna) => {
+        padrao[String(coluna.chave)] = coluna.visivelPorPadrao !== false;
+      });
+      setVisibilidadeColunas(padrao);
+    }
+  }, [user?.id, configuracao.nomeEntidade, configuracao.colunas]);
+
+  // Persistir configurações de colunas por usuário
+  useEffect(() => {
+    const userId = user?.id || 'anonymous';
+    const chaveStorage = `listagem_${configuracao.nomeEntidade.toLowerCase()}_${userId}_colunas`;
+    localStorage.setItem(chaveStorage, JSON.stringify(visibilidadeColunas));
+  }, [visibilidadeColunas, configuracao.nomeEntidade, user?.id]);
   
   // Dados filtrados localmente (para visualização imediata)
   const dadosFiltrados = useMemo(() => {
@@ -415,6 +488,19 @@ export function ListagemProvider<T extends Record<string, any>>({
     });
   }, []);
   
+  const resetarColunas = useCallback(() => {
+    const padrao: Record<string, boolean> = {};
+    configuracao.colunas.forEach((coluna) => {
+      padrao[String(coluna.chave)] = coluna.visivelPorPadrao !== false;
+    });
+    setVisibilidadeColunas(padrao);
+    
+    // Limpar configuração salva por usuário
+    const userId = user?.id || 'anonymous';
+    const chaveStorage = `listagem_${configuracao.nomeEntidade.toLowerCase()}_${userId}_colunas`;
+    localStorage.removeItem(chaveStorage);
+  }, [configuracao.colunas, configuracao.nomeEntidade, user?.id]);
+  
   const excluirItem = useCallback(async (item: T) => {
     try {
       await deleteItem((item as any).id);
@@ -478,6 +564,7 @@ export function ListagemProvider<T extends Record<string, any>>({
     definirOrdemColunas,
     definirTamanhoColuna,
     definirFixacaoColuna,
+    resetarColunas,
     excluirItem,
     recarregarDados,
     recarregarResumo,

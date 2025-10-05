@@ -36,7 +36,7 @@ const Local = () => {
   const { id } = useParams();
   const isEdit = !!id;
 
-  const { getLocalById, createLocal, updateLocal } = useLocais();
+  const { getLocalById, getLocal, createLocal, updateLocal } = useLocais();
 
   const [formData, setFormData] = useState<LocalFormData>({
     nome: '',
@@ -55,24 +55,32 @@ const Local = () => {
   // Carregar dados do local se for edição
   useEffect(() => {
     if (isEdit && id) {
-      const local = getLocalById(id);
-      if (local) {
-        setFormData({
-          nome: local.nome || '',
-          tipo: local.tipo?.toString() || '',
-          cor: local.cor || '#10B981',
-          valorHora: local.valorHora?.toString() || '',
-          capacidade: local.capacidade?.toString() || '',
-          descricao: local.descricao || '',
-          comodidades: local.comodidades || [],
-          situacao: local.situacao?.toString() || '1',
-          intervalo: local.intervalo?.toString() || '60',
-          horaAbertura: local.horaAbertura || '08:00',
-          horaFechamento: local.horaFechamento || '22:00'
-        });
-      }
+      const carregarLocal = async () => {
+        try {
+          const local = await getLocal(id);
+          if (local) {
+            setFormData({
+              nome: local.nome || '',
+              tipo: local.tipo || '',
+              cor: local.cor || '#10B981',
+              valorHora: local.valorHora?.toString() || '',
+              capacidade: local.capacidade?.toString() || '',
+              descricao: local.descricao || '',
+              comodidades: local.comodidades || [],
+              situacao: local.situacao?.toString() || '1',
+              intervalo: local.intervalo?.toString() || '60',
+              horaAbertura: local.horaAbertura || '08:00',
+              horaFechamento: local.horaFechamento || '22:00'
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao carregar local:', error);
+          toast.error('Erro ao carregar dados do local');
+        }
+      };
+      carregarLocal();
     }
-  }, [isEdit, id, getLocalById]);
+  }, [isEdit, id, getLocal]);
 
   const tourSteps: TourStep[] = [
     {
@@ -111,7 +119,7 @@ const Local = () => {
     try {
       const localData = {
         nome: formData.nome.trim(),
-        tipo: parseInt(formData.tipo) as TipoLocal,
+        tipo: formData.tipo,
         cor: formData.cor,
         valorHora: parseFloat(formData.valorHora) || 0,
         capacidade: formData.capacidade ? parseInt(formData.capacidade) : 0,
@@ -120,8 +128,7 @@ const Local = () => {
         situacao: parseInt(formData.situacao) as SituacaoLocal,
         intervalo: parseInt(formData.intervalo) || 60,
         horaAbertura: formData.horaAbertura,
-        horaFechamento: formData.horaFechamento,
-        filialId: 'default' // TODO: Obter da filial atual
+        horaFechamento: formData.horaFechamento
       };
 
       if (isEdit && id) {

@@ -26,29 +26,85 @@ const Locais = () => {
           titulo: 'Nome',
           ordenavel: true,
           filtravel: true,
-          tipoFiltro: 'text'
+          tipoFiltro: 'text',
+          tipo: 'texto',
+          visivelPorPadrao: true
         },
         {
           chave: 'tipo',
           titulo: 'Tipo',
+          ordenavel: true,
           filtravel: true,
-          tipoFiltro: 'select'
+          tipoFiltro: 'select',
+          tipo: 'texto',
+          visivelPorPadrao: true
+        },
+        {
+          chave: 'descricao',
+          titulo: 'Descrição',
+          filtravel: true,
+          tipoFiltro: 'text',
+          tipo: 'texto',
+          visivelPorPadrao: false,
+          cortarTextoComQuantCaracteres: 40
         },
         {
           chave: 'intervalo',
           titulo: 'Intervalo',
-          renderizar: (local) => `${local.intervalo} min`
+          ordenavel: true,
+          renderizar: (local) => `${local.intervalo} min`,
+          tipo: 'numero',
+          visivelPorPadrao: false,
+          tamanhoMaximo: 100
         },
         {
           chave: 'valorHora',
           titulo: 'Valor/Hora',
           ordenavel: true,
-          renderizar: (local) => `R$ ${local.valorHora.toFixed(2)}`
+          renderizar: (local) => `R$ ${local.valorHora.toFixed(2)}`,
+          tipo: 'valor',
+          visivelPorPadrao: true,
+          tamanhoMaximo: 120
         },
         {
           chave: 'capacidade',
           titulo: 'Capacidade',
-          renderizar: (local) => local.capacidade ? `${local.capacidade} pessoas` : 'N/A'
+          ordenavel: true,
+          renderizar: (local) => local.capacidade ? `${local.capacidade} pessoas` : 'N/A',
+          tipo: 'numero',
+          visivelPorPadrao: true,
+          tamanhoMaximo: 100
+        },
+        {
+          chave: 'comodidades',
+          titulo: 'Comodidades',
+          renderizar: (local) => local.comodidades?.join(', ') || 'N/A',
+          tipo: 'texto',
+          visivelPorPadrao: false,
+          cortarTextoComQuantCaracteres: 35
+        },
+        {
+          chave: 'cor',
+          titulo: 'Cor',
+          tipo: 'cor',
+          visivelPorPadrao: false,
+          tamanhoMaximo: 100
+        },
+        {
+          chave: 'horaAbertura',
+          titulo: 'Abertura',
+          ordenavel: true,
+          tipo: 'hora',
+          visivelPorPadrao: false,
+          tamanhoMaximo: 100
+        },
+        {
+          chave: 'horaFechamento',
+          titulo: 'Fechamento',
+          ordenavel: true,
+          tipo: 'hora',
+          visivelPorPadrao: false,
+          tamanhoMaximo: 100
         },
         {
           chave: 'situacao',
@@ -57,16 +113,35 @@ const Locais = () => {
           filtravel: true,
           tipoFiltro: 'select',
           tipo: 'situacao',
+          visivelPorPadrao: true,
+          tamanhoMaximo: 120,
           mapeamentoValores: {
             1: 'ativo',
-            0: 'inativo',
-            2: 'manutencao'
+            2: 'inativo',
+            3: 'manutencao'
           },
           opcoesSituacao: {
             ativo: { label: 'Ativo', variant: 'default' },
             inativo: { label: 'Inativo', variant: 'destructive' },
             manutencao: { label: 'Manutenção', variant: 'secondary' }
           }
+        },
+        {
+          chave: 'dataCriacao',
+          titulo: 'Data Cadastro',
+          ordenavel: true,
+          tipo: 'data',
+          visivelPorPadrao: true,
+          tamanhoMaximo: 120
+        },
+        {
+          chave: 'dataAtualizacao',
+          titulo: 'Última Atualização',
+          ordenavel: true,
+          renderizar: (local) => local.dataAtualizacao ? new Date(local.dataAtualizacao).toLocaleDateString('pt-BR') : 'N/A',
+          tipo: 'data',
+          visivelPorPadrao: false,
+          tamanhoMaximo: 150
         }
       ]}
       acoes={[

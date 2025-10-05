@@ -147,7 +147,7 @@ const ModuleHeader: React.FC<ModuleHeaderProps> = ({
                     </div>
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-foreground border border-border">
                         <User className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>

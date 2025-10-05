@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUsuariosAgenda } from '@/hooks/useUsuariosAgenda';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
@@ -27,6 +28,7 @@ const CabecalhoAgenda = memo(({
   aoSincronizar,
   sincronizando = false
 }: CabecalhoAgendaProps) => {
+  const { usuarios, loading: usuariosLoading } = useUsuariosAgenda();
 
   const titulo = useMemo(() => {
     switch (tipoVisualizacao) {
@@ -58,24 +60,50 @@ const CabecalhoAgenda = memo(({
           <h1 className="text-xl font-semibold text-foreground">
             {titulo}
           </h1>
-          {/* Avatar group */}
+          {/* Avatar group - Usuários com permissão de agenda */}
           <div className="flex -space-x-2">
-            <Avatar className="w-8 h-8 border-2 border-background">
-              <AvatarImage src="https://raw.githubusercontent.com/origin-space/origin-images/refs/heads/main/exp1/avatar-40-16_zn3ygb.jpg" />
-              <AvatarFallback>U1</AvatarFallback>
-            </Avatar>
-            <Avatar className="w-8 h-8 border-2 border-background">
-              <AvatarImage src="https://raw.githubusercontent.com/origin-space/origin-images/refs/heads/main/exp1/avatar-40-10_qyybkj.jpg" />
-              <AvatarFallback>U2</AvatarFallback>
-            </Avatar>
-            <Avatar className="w-8 h-8 border-2 border-background">
-              <AvatarImage src="https://raw.githubusercontent.com/origin-space/origin-images/refs/heads/main/exp1/avatar-40-15_fguzbs.jpg" />
-              <AvatarFallback>U3</AvatarFallback>
-            </Avatar>
-            <Avatar className="w-8 h-8 border-2 border-background">
-              <AvatarImage src="https://raw.githubusercontent.com/origin-space/origin-images/refs/heads/main/exp1/avatar-40-11_jtjhsp.jpg" />
-              <AvatarFallback>U4</AvatarFallback>
-            </Avatar>
+            {usuariosLoading ? (
+              // Skeleton enquanto carrega
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="w-8 h-8 rounded-full bg-muted animate-pulse border-2 border-background" />
+              ))
+            ) : usuarios.length > 0 ? (
+              // Mostrar até 4 usuários
+              usuarios.slice(0, 4).map((usuario, index) => {
+                const iniciais = usuario.nome
+                  .split(' ')
+                  .map(nome => nome.charAt(0))
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+                
+                return (
+                  <Avatar 
+                    key={usuario.id} 
+                    className="w-8 h-8 border-2 border-background"
+                    title={`${usuario.nome}${usuario.cargo ? ` - ${usuario.cargo}` : ''}`}
+                  >
+                    <AvatarImage src={usuario.foto || undefined} />
+                    <AvatarFallback className="text-xs font-medium text-foreground border border-border">
+                      {iniciais}
+                    </AvatarFallback>
+                  </Avatar>
+                );
+              })
+            ) : (
+              // Fallback quando não há usuários
+              <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">?</span>
+              </div>
+            )}
+            {/* Indicador de mais usuários se houver mais de 4 */}
+            {usuarios.length > 4 && (
+              <div className="w-8 h-8 rounded-full bg-primary border-2 border-background flex items-center justify-center">
+                <span className="text-xs font-medium text-primary-foreground">
+                  +{usuarios.length - 4}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         {/* Lado direito - Controles */}

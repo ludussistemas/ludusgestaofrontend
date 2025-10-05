@@ -238,6 +238,13 @@ export function useBaseCrud<T>(
   const createItem = useCallback(async (itemData: Partial<T>): Promise<T> => {
     try {
       const response = await api.post(endpoint, itemData);
+      
+      // Recarregar dados após criação usando os parâmetros atuais
+      await fetchData({ 
+        page: pagination.currentPage, 
+        limit: pagination.pageSize
+      });
+      
       return ((response as any).data);
     } catch (error: any) {
       console.error('Erro ao criar item:', error);
@@ -266,11 +273,18 @@ export function useBaseCrud<T>(
       
       throw error;
     }
-  }, [endpoint]);
+  }, [endpoint, fetchData, pagination.currentPage, pagination.pageSize]);
 
   const updateItem = useCallback(async (id: string | number, itemData: Partial<T>): Promise<T> => {
     try {
       const response = await api.put(`${endpoint}/${id}`, itemData);
+      
+      // Recarregar dados após atualização usando os parâmetros atuais
+      await fetchData({ 
+        page: pagination.currentPage, 
+        limit: pagination.pageSize
+      });
+      
       return ((response as any).data);
     } catch (error: any) {
       console.error('Erro ao atualizar item:', error);
@@ -299,7 +313,7 @@ export function useBaseCrud<T>(
       
       throw error;
     }
-  }, [endpoint]);
+  }, [endpoint, fetchData, pagination.currentPage, pagination.pageSize]);
 
   const getItem = useCallback(async (id: string | number): Promise<T> => {
     try {

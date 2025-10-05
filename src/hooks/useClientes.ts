@@ -1,5 +1,5 @@
 
-import { Cliente } from '@/types/cliente';
+import { Cliente, CreateClienteDTO, UpdateClienteDTO } from '@/types';
 import { toast } from 'sonner';
 import { useCallback } from 'react';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
@@ -22,7 +22,7 @@ export const useClientes = () => {
     }));
   };
 
-  const createCliente = async (clienteData: Omit<Cliente, 'id' | 'dataCriacao'>) => {
+  const createCliente = async (clienteData: CreateClienteDTO) => {
     try {
       const loadingToast = toast.loading('Criando cliente...');
       
@@ -48,7 +48,7 @@ export const useClientes = () => {
     }
   };
 
-  const updateCliente = async (id: string, clienteData: Partial<Omit<Cliente, 'id' | 'dataCriacao'>>) => {
+  const updateCliente = async (id: string, clienteData: UpdateClienteDTO) => {
     try {
       const loadingToast = toast.loading('Atualizando cliente...');
       
@@ -77,6 +77,7 @@ export const useClientes = () => {
   return {
     ...baseHook,
     getClienteById,
+    getCliente: baseHook.getItem, // Função para buscar dados específicos da API
     getClientesForSearch,
     createCliente,
     updateCliente,

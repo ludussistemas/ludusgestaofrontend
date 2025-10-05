@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useCallback } from 'react';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
 import { api, ApiResponse } from '../lib/api';
-import { Local } from '../types';
+import { Local, CreateLocalDTO, UpdateLocalDTO } from '../types';
 
 export const useLocais = () => {
   const baseHook = useBaseCrud<Local>('locais', {
@@ -22,7 +22,7 @@ export const useLocais = () => {
     }));
   };
 
-  const createLocal = async (localData: Omit<Local, 'id' | 'dataCriacao'>) => {
+  const createLocal = async (localData: CreateLocalDTO) => {
     try {
       const loadingToast = toast.loading('Criando local...');
       
@@ -48,7 +48,7 @@ export const useLocais = () => {
     }
   };
 
-  const updateLocal = async (id: string, localData: Partial<Local>) => {
+  const updateLocal = async (id: string, localData: UpdateLocalDTO) => {
     try {
       const loadingToast = toast.loading('Atualizando local...');
       
@@ -75,7 +75,9 @@ export const useLocais = () => {
   };
 
   // Funções para gerenciar configurações de horários dos locais
-  const generateTimeSlots = (venueId: string, startHour: number = 7, endHour: number = 21, customInterval?: number) => {
+  const generateTimeSlots = (venueId: string, startHour: number = 7, endHour: number = 21, customInterval?: number, locaisData?: any[]) => {
+    const locais = locaisData || baseHook.data;
+    
     if (venueId === 'all' || venueId === 'custom') {
       // Para 'all' ou 'custom', usar intervalo padrão ou customizado
       const interval = customInterval || 30;
@@ -83,7 +85,7 @@ export const useLocais = () => {
     }
 
     // Buscar o local específico
-    const venue = baseHook.data.find(l => l.id === venueId);
+    const venue = locais.find(l => l.id === venueId);
     if (!venue) {
       return generateTimeSlotsForInterval(startHour, endHour, 30);
     }
@@ -93,41 +95,67 @@ export const useLocais = () => {
     const endTime = parseInt(venue.horaFechamento.split(':')[0]) || endHour;
     const interval = venue.intervalo || 30;
 
+    console.log('🔍 generateTimeSlots Debug:');
+    console.log('  - venue:', venue.nome);
+    console.log('  - horaAbertura:', venue.horaAbertura);
+    console.log('  - horaFechamento:', venue.horaFechamento);
+    console.log('  - intervalo:', venue.intervalo);
+    console.log('  - startTime calculado:', startTime);
+    console.log('  - endTime calculado:', endTime);
+    console.log('  - interval usado:', interval);
+
     return generateTimeSlotsForInterval(startTime, endTime, interval);
   };
 
   // Função auxiliar para gerar slots de tempo
   const generateTimeSlotsForInterval = (startHour: number, endHour: number, interval: number) => {
     const slots = [];
-    const totalMinutes = (endHour - startHour) * 60;
+    const startMinutes = startHour * 60;
+    const endMinutes = endHour * 60;
+    const totalMinutes = endMinutes - startMinutes;
     const numSlots = Math.floor(totalMinutes / interval);
 
+    console.log('🔍 generateTimeSlotsForInterval Debug:');
+    console.log('  - startHour:', startHour);
+    console.log('  - endHour:', endHour);
+    console.log('  - interval:', interval);
+    console.log('  - startMinutes:', startMinutes);
+    console.log('  - endMinutes:', endMinutes);
+    console.log('  - totalMinutes:', totalMinutes);
+    console.log('  - numSlots:', numSlots);
+
     for (let i = 0; i < numSlots; i++) {
-      const totalMinutes = startHour * 60 + (i * interval);
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
+      const currentMinutes = startMinutes + (i * interval);
+      const hours = Math.floor(currentMinutes / 60);
+      const minutes = currentMinutes % 60;
       const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       
       slots.push({
         time: timeString,
         hour: hours,
         minute: minutes,
-        totalMinutes: totalMinutes
+        totalMinutes: currentMinutes
       });
     }
+
+    console.log('  - slots gerados:', slots.length);
+    console.log('  - primeiros slots:', slots.slice(0, 5));
+    console.log('  - últimos slots:', slots.slice(-5));
 
     return slots;
   };
 
   // Obter intervalo do local
-  const getVenueInterval = (venueId: string) => {
+  const getVenueInterval = (venueId: string, locaisData?: any[]) => {
+    const locais = locaisData || baseHook.data;
+    
     if (venueId === 'all') {
       // Para 'all', retornar o menor intervalo entre todos os locais
-      const intervals = baseHook.data.map(l => l.intervalo).filter(Boolean);
+      const intervals = locais.map(l => l.intervalo).filter(Boolean);
       return intervals.length > 0 ? Math.min(...intervals) : 30;
     }
 
-    const venue = baseHook.data.find(l => l.id === venueId);
+    const venue = locais.find(l => l.id === venueId);
     return venue?.intervalo || 30;
   };
 
@@ -154,6 +182,7 @@ export const useLocais = () => {
   return {
     ...baseHook,
     getLocalById,
+    getLocal: baseHook.getItem, // Função para buscar dados específicos da API
     getLocaisForSearch,
     createLocal,
     updateLocal,

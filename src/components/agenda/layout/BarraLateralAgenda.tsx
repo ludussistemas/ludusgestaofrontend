@@ -86,7 +86,7 @@ const BarraLateralAgenda = memo((props: BarraLateralAgendaProps) => {
         </div>
         
         {/* Calendário */}
-        <div className="py-2">
+        <div className="py-2 flex-shrink-0">
           <CalendarioSidebar
             selectedDate={selectedDate}
             onDateChange={onDateChange}
@@ -94,17 +94,20 @@ const BarraLateralAgenda = memo((props: BarraLateralAgendaProps) => {
             eventDates={eventDates}
           />
         </div>
+        
         {/* Lista de Locais */}
-        <ListaLocaisAgenda
-          locaisSelecionados={selectedLocais}
-          locais={locais}
-          todosLocais={allLocais}
-          eventCountByVenue={eventCountByVenue}
-          aoAlternarLocal={onLocalToggle}
-          estaLocalSelecionado={isLocalSelected}
-          modoCompacto={!isExpanded}
-          loading={locaisLoading}
-        />
+        <div className="flex-1 min-h-0">
+          <ListaLocaisAgenda
+            locaisSelecionados={selectedLocais}
+            locais={locais}
+            todosLocais={allLocais}
+            eventCountByVenue={eventCountByVenue}
+            aoAlternarLocal={onLocalToggle}
+            estaLocalSelecionado={isLocalSelected}
+            modoCompacto={!isExpanded}
+            loading={locaisLoading}
+          />
+        </div>
       </div>
     </div>
   );

@@ -6,5 +6,5 @@
 export enum SituacaoCliente {
   Ativo = 1,
   Inativo = 2,
-  Suspenso = 3
+  Bloqueado = 3
 } 

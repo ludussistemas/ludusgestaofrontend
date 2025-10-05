@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
 import { api, ApiResponse } from '../lib/api';
-import { Recebivel } from '../types';
+import { Recebivel, CreateRecebivelDTO, UpdateRecebivelDTO } from '../types';
 
 export const useRecebiveis = () => {
   const baseHook = useBaseCrud<Recebivel>('recebiveis', {
@@ -21,7 +21,7 @@ export const useRecebiveis = () => {
     }));
   };
 
-  const createRecebivel = async (recebivelData: Omit<Recebivel, 'id' | 'dataCriacao'>) => {
+  const createRecebivel = async (recebivelData: CreateRecebivelDTO) => {
     try {
       const loadingToast = toast.loading('Criando recebível...');
       
@@ -47,7 +47,7 @@ export const useRecebiveis = () => {
     }
   };
 
-  const updateRecebivel = async (id: string, recebivelData: Partial<Recebivel>) => {
+  const updateRecebivel = async (id: string, recebivelData: UpdateRecebivelDTO) => {
     try {
       const loadingToast = toast.loading('Atualizando recebível...');
       
@@ -105,6 +105,7 @@ export const useRecebiveis = () => {
   return {
     ...baseHook,
     getRecebivelById,
+    getRecebivel: baseHook.getItem, // Função para buscar dados específicos da API
     getRecebiveisForSearch,
     createRecebivel,
     updateRecebivel,

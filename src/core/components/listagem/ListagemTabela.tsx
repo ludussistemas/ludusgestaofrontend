@@ -239,6 +239,7 @@ export function ListagemTabela() {
                             opcoesSituacao={coluna.opcoesSituacao}
                             mapeamentoValores={coluna.mapeamentoValores}
                             tipoEntidade={coluna.tipoEntidade}
+                            cortarTextoComQuantCaracteres={coluna.cortarTextoComQuantCaracteres}
                           />
                         )}
                       </td>

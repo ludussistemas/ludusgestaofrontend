@@ -12,6 +12,12 @@ export * from './local';
 export * from './recebivel';
 export * from './reserva';
 
+// DTOs
+export * from './dto/cliente-dto';
+export * from './dto/local-dto';
+export * from './dto/reserva-dto';
+export * from './dto/recebivel-dto';
+
 // Tipos existentes
 export * from './payment';
 export * from './reports';

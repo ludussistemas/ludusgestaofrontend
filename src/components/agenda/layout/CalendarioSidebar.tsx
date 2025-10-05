@@ -43,32 +43,40 @@ const CalendarioSidebar: React.FC<CalendarioSidebarProps> = ({
     onDateChange(parseDate(dateStr));
   };
 
-  if (!isExpanded) {
-    return (
-      <div className="flex flex-col items-center p-2 space-y-2 transition-all duration-300 ease-in-out">
+  return (
+    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
+      isExpanded ? 'w-full' : 'w-14'
+    }`}>
+      {/* Versão compacta */}
+      <div className={`flex flex-col items-center justify-center py-2 px-1 transition-all duration-500 ease-in-out ${
+        isExpanded ? 'opacity-0 scale-0 h-0' : 'opacity-100 scale-100 h-auto'
+      }`}>
         <Button
           variant="ghost"
           size="sm"
           onClick={goToToday}
-          className="h-8 w-8 p-0 hover:bg-accent transition-all duration-200"
+          className="h-8 w-8 p-0 hover:bg-accent transition-all duration-500"
           title="Ir para hoje"
         >
           <CalendarIcon className="h-4 w-4" />
         </Button>
-        <div className="text-xs text-center text-muted-foreground transition-all duration-300">
+        <div className="text-xs text-center text-muted-foreground transition-all duration-500 mt-1">
           {format(selectedDateAsDate, 'dd/MM', { locale: ptBR })}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="mb-4 transition-all duration-300 ease-in-out">
-      <Calendar
-        value={selectedDate}
-        onChange={handleDateSelect}
-        className="w-full border-0 shadow-none bg-transparent transition-all duration-300"
-      />
+      {/* Versão expandida */}
+      <div className={`transition-all duration-500 ease-in-out ${
+        isExpanded ? 'opacity-100 scale-100 h-auto' : 'opacity-0 scale-0 h-0'
+      }`}>
+        <div className="px-2">
+          <Calendar
+            value={selectedDate}
+            onChange={handleDateSelect}
+            className="w-full border-0 shadow-none bg-transparent transition-all duration-500"
+          />
+        </div>
+      </div>
     </div>
   );
 };

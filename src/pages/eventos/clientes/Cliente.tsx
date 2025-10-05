@@ -12,9 +12,11 @@ import CampoEmail from '@/core/components/CampoEmail';
 import CampoTelefone from '@/core/components/CampoTelefone';
 import { useClientes } from '@/hooks/useClientes';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
+import { SituacaoCliente } from '@/types/enums/situacao-cliente';
 import { User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface ClienteFormData {
   nome: string;
@@ -36,7 +38,7 @@ const Cliente = () => {
   const { id } = useParams();
   const isEdit = !!id;
 
-  const { getClienteById, createCliente, updateCliente } = useClientes();
+  const { getClienteById, getCliente, createCliente, updateCliente } = useClientes();
 
   const [formData, setFormData] = useState<ClienteFormData>({
     nome: '',
@@ -55,24 +57,32 @@ const Cliente = () => {
   // Carregar dados do cliente se for edição
   useEffect(() => {
     if (isEdit && id) {
-      const cliente = getClienteById(id);
-      if (cliente) {
-        setFormData({
-          nome: cliente.name || '',
-          email: cliente.email || '',
-          telefone: cliente.phone || '',
-          documento: cliente.document || '',
-          tipoDocumento: cliente.document.includes('/') ? 'cnpj' : 'cpf',
-          endereco: cliente.address || '',
-          cidade: '',
-          estado: '',
-          cep: '',
-          observacoes: cliente.notes || '',
-          status: cliente.status === 'active' ? 'ativo' : 'inativo'
-        });
-      }
+      const carregarCliente = async () => {
+        try {
+          const cliente = await getCliente(id);
+          if (cliente) {
+            setFormData({
+              nome: cliente.nome || '',
+              email: cliente.email || '',
+              telefone: cliente.telefone || '',
+              documento: cliente.documento || '',
+              tipoDocumento: cliente.documento.includes('/') ? 'cnpj' : 'cpf',
+              endereco: cliente.endereco || '',
+              cidade: '',
+              estado: '',
+              cep: '',
+              observacoes: cliente.observacoes || '',
+              status: cliente.situacao === 1 ? 'ativo' : 'inativo'
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao carregar cliente:', error);
+          toast.error('Erro ao carregar dados do cliente');
+        }
+      };
+      carregarCliente();
     }
-  }, [isEdit, id, getClienteById]);
+  }, [isEdit, id, getCliente]);
 
   const tourSteps: TourStep[] = [
     {
@@ -104,15 +114,13 @@ const Cliente = () => {
     }
 
     const clienteData = {
-      name: formData.nome,
-      label: formData.nome,
-      subtitle: `${formData.tipoDocumento.toUpperCase()}: ${formData.documento}`,
+      nome: formData.nome,
+      documento: formData.documento,
       email: formData.email,
-      phone: formData.telefone,
-      document: formData.documento,
-      address: formData.endereco,
-      notes: formData.observacoes,
-      status: formData.status === 'ativo' ? 'active' as const : 'inactive' as const
+      telefone: formData.telefone,
+      endereco: formData.endereco,
+      observacoes: formData.observacoes,
+      situacao: formData.status === 'ativo' ? SituacaoCliente.Ativo : SituacaoCliente.Inativo
     };
 
     if (isEdit && id) {

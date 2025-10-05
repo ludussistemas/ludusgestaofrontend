@@ -3,8 +3,9 @@
 // ============================================================================
 
 export enum SituacaoRecebivel {
-  Pendente = 1,
-  Pago = 2,
-  Vencido = 3,
-  Cancelado = 4
+  Aberto = 1,
+  Vencido = 2,
+  Pago = 3,
+  Cancelado = 4,
+  Estornado = 5
 } 

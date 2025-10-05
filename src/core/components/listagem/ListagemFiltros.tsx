@@ -37,6 +37,7 @@ export function ListagemFiltros() {
     limparFiltros,
     definirModoVisualizacao,
     definirVisibilidadeColuna,
+    resetarColunas,
   } = useListagem();
   
   // Preparar filtros disponíveis
@@ -180,15 +181,29 @@ export function ListagemFiltros() {
               <DropdownMenuContent align="end" className="w-56 bg-background">
                 <DropdownMenuLabel>Visibilidade das Colunas</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {config.colunas.filter(coluna => coluna.podeOcultar !== false).map((coluna) => (
-                  <DropdownMenuCheckboxItem
-                    key={String(coluna.chave)}
-                    checked={visibilidadeColunas[String(coluna.chave)] !== false}
-                    onCheckedChange={(value) => definirVisibilidadeColuna(String(coluna.chave), !!value)}
-                  >
-                    {coluna.titulo}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                <div className="max-h-[400px] overflow-y-auto">
+                  {config.colunas.filter(coluna => coluna.podeOcultar !== false).map((coluna) => (
+                    <DropdownMenuCheckboxItem
+                      key={String(coluna.chave)}
+                      checked={visibilidadeColunas[String(coluna.chave)] !== false}
+                      onCheckedChange={(value) => definirVisibilidadeColuna(String(coluna.chave), !!value)}
+                      onSelect={(e) => e.preventDefault()} // Previne fechamento do dropdown
+                    >
+                      {coluna.titulo}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    resetarColunas();
+                  }}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Resetar Colunas
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

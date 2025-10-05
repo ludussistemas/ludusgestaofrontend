@@ -1,7 +1,8 @@
 import { toast } from 'sonner';
+import { useCallback, useState } from 'react';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
 import { api, ApiResponse } from '../lib/api';
-import { Reserva } from '../types';
+import { Reserva, CreateReservaDTO, UpdateReservaDTO, Local, Cliente } from '../types';
 
 export const useReservas = () => {
   const baseHook = useBaseCrud<Reserva>('reservas', {
@@ -75,7 +76,7 @@ export const useReservas = () => {
     }));
   };
 
-  const createReserva = async (reservaData: Omit<Reserva, 'id' | 'dataCriacao'>) => {
+  const createReserva = async (reservaData: CreateReservaDTO) => {
     try {
       const loadingToast = toast.loading('Criando reserva...');
       
@@ -101,7 +102,7 @@ export const useReservas = () => {
     }
   };
 
-  const updateReserva = async (id: string, reservaData: Partial<Reserva>) => {
+  const updateReserva = async (id: string, reservaData: UpdateReservaDTO) => {
     try {
       const loadingToast = toast.loading('Atualizando reserva...');
       
@@ -209,6 +210,128 @@ export const useReservas = () => {
     }
   };
 
+  // Estados para timeline
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
+  // Função para buscar reservas para timeline
+  const buscarReservasTimeline = useCallback(async (
+    data: Date, 
+    localId?: string, 
+    locais: Local[] = [], 
+    clientes: Cliente[] = []
+  ) => {
+    if (!data) return;
+    
+    try {
+      setTimelineLoading(true);
+      
+      // Calcular período: do dia clicado até o dia posterior
+      const dataInicio = data.toISOString().split('T')[0];
+      const dataFim = new Date(data);
+      dataFim.setDate(dataFim.getDate() + 1);
+      const dataFimStr = dataFim.toISOString().split('T')[0];
+      
+      console.log('🔍 Buscando reservas para timeline:', { dataInicio, dataFim: dataFimStr, localId });
+      
+      // Buscar reservas por período
+      const localIds = localId ? [localId] : undefined;
+      await fetchReservasPorPeriodo(dataInicio, dataFimStr, localIds);
+      
+      // Filtrar reservas por local se necessário
+      const reservasFiltradas = localId 
+        ? baseHook.data.filter(reserva => reserva.localId === localId)
+        : baseHook.data;
+      
+      console.log('📅 Eventos carregados para timeline:', reservasFiltradas);
+      
+      // Transformar em eventos para timeline
+      const eventosTimeline = reservasFiltradas.map(reserva => {
+        const cliente = clientes.find(c => c.id === reserva.clienteId);
+        const local = locais.find(l => l.id === reserva.localId);
+        
+        return {
+          id: reserva.id,
+          client: cliente?.nome || 'Cliente não encontrado',
+          venue: local?.nome || 'Local não encontrado',
+          startTime: reserva.dataInicio?.split('T')[1]?.substring(0, 5) || '',
+          endTime: reserva.dataFim?.split('T')[1]?.substring(0, 5) || '',
+          status: reserva.situacao === 1 ? 'confirmed' : 'pending',
+          color: reserva.situacao === 1 ? '#10b981' : '#f59e0b',
+          sport: local?.tipo || '',
+          notes: reserva.observacoes || ''
+        };
+      });
+      
+      setTimelineEvents(eventosTimeline);
+    } catch (error) {
+      console.error('Erro ao buscar reservas para timeline:', error);
+      toast.error('Erro ao carregar eventos da timeline');
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, [fetchReservasPorPeriodo]);
+
+  // Função para obter configurações do local
+  const getVenueConfig = useCallback((localId: string, locais: Local[]) => {
+    if (!Array.isArray(locais) || locais.length === 0) {
+      return {
+        interval: 30,
+        minTime: "07:00",
+        maxTime: "21:00"
+      };
+    }
+    
+    const selectedVenue = locais.find(l => l.id === localId);
+    
+    if (!selectedVenue) {
+      return {
+        interval: 30,
+        minTime: "07:00",
+        maxTime: "21:00"
+      };
+    }
+    
+    return {
+      interval: selectedVenue.intervalo || 30,
+      minTime: selectedVenue.horaAbertura || "07:00",
+      maxTime: selectedVenue.horaFechamento || "21:00"
+    };
+  }, []);
+
+  // Função para obter horários ocupados
+  const getOccupiedTimes = useCallback((localId: string, date: Date, locais: Local[]) => {
+    if (!localId || !date || !Array.isArray(locais)) {
+      return [];
+    }
+    
+    const selectedVenue = locais.find(l => l.id === localId);
+    if (!selectedVenue) return [];
+    
+    const venueConfig = getVenueConfig(localId, locais);
+    const occupiedTimes: string[] = [];
+    
+    // Filtrar reservas do local e data específica
+    const reservasDoLocal = baseHook.data.filter(reserva => {
+      if (reserva.localId !== localId) return false;
+      
+      const reservaDate = new Date(reserva.dataInicio);
+      return reservaDate.toDateString() === date.toDateString();
+    });
+    
+    // Adicionar horários ocupados
+    reservasDoLocal.forEach(reserva => {
+      const startTime = reserva.dataInicio?.split('T')[1]?.substring(0, 5);
+      const endTime = reserva.dataFim?.split('T')[1]?.substring(0, 5);
+      
+      if (startTime && endTime) {
+        occupiedTimes.push(startTime, endTime);
+      }
+    });
+    
+    return occupiedTimes;
+  }, [baseHook.data, getVenueConfig]);
+
   return {
     ...baseHook,
     getReservaById,
@@ -219,6 +342,12 @@ export const useReservas = () => {
     cancelarReserva,
     finalizarReserva,
     fetchReservasPorPeriodo,
+    // Funções de timeline
+    buscarReservasTimeline,
+    getVenueConfig,
+    getOccupiedTimes,
+    timelineEvents,
+    timelineLoading,
     // Aliases para compatibilidade
     reservas: baseHook.data,
     fetchReservas: baseHook.fetchData,

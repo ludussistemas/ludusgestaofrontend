@@ -381,8 +381,11 @@ export function useAgenda() {
           const mesmoDia = isSameDay(parseISO(dataReserva), dia);
           
           // Aplicar filtro por local no frontend quando necessário
-          // (quando há 2+ locais selecionados ou "all")
-          const localSelecionado = locaisSelecionados.includes('all') || 
+          // Se não há locais selecionados (array vazio), mostrar todos
+          // Se há "all" selecionado, mostrar todos
+          // Caso contrário, filtrar pelos locais selecionados
+          const localSelecionado = locaisSelecionados.length === 0 || 
+                                 locaisSelecionados.includes('all') || 
                                  locaisSelecionados.includes(reserva.localId);
           
           return mesmoDia && localSelecionado;

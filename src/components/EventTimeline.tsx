@@ -38,6 +38,7 @@ interface EventTimelineProps {
   onDeleteEvent?: (eventId: number) => void;
   loading?: boolean;
   getLocalByName?: (venueName: string) => any;
+  locais?: any[];
 }
 
 const EventTimeline = ({ 
@@ -51,10 +52,14 @@ const EventTimeline = ({
   onCancelEdit,
   onDeleteEvent,
   loading = false,
-  getLocalByName: propGetLocalByName
+  getLocalByName: propGetLocalByName,
+  locais: propLocais
 }: EventTimelineProps) => {
   
-  const { generateTimeSlots, getVenueInterval, data: locais } = useLocais();
+  const { generateTimeSlots, getVenueInterval, data: hookLocais } = useLocais();
+  
+  // Usar locais passados como prop ou do hook
+  const locais = propLocais || hookLocais;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<number | null>(null);
   
@@ -63,18 +68,33 @@ const EventTimeline = ({
     return <EmptyTimelineState />;
   }
   
-  // Buscar o local pelo nome para obter o ID
-  const venue = propGetLocalByName ? propGetLocalByName(selectedVenue) : locais.find(l => l.nome === selectedVenue);
+  // selectedVenue agora é o nome do local
+  const venue = locais.find(l => l.nome === selectedVenue);
   const venueId = venue?.id || 'all';
   
+  console.log('🔍 EventTimeline Debug:');
+  console.log('  - selectedVenue:', selectedVenue);
+  console.log('  - propLocais:', propLocais);
+  console.log('  - hookLocais:', hookLocais);
+  console.log('  - locais usados:', locais);
+  console.log('  - venue encontrado:', venue);
+  console.log('  - venueId:', venueId);
+  console.log('  - events recebidos:', events);
+  
   // Gerar slots baseados no local selecionado
-  const timeSlots = generateTimeSlots(venueId);
-  const interval = getVenueInterval(venueId);
+  const timeSlots = generateTimeSlots(venueId, 7, 21, undefined, locais);
+  const interval = getVenueInterval(venueId, locais);
+  
+  console.log('  - timeSlots gerados:', timeSlots.length);
+  console.log('  - interval:', interval);
+  console.log('  - venue.intervalo:', venue?.intervalo);
+  console.log('  - venue.horaAbertura:', venue?.horaAbertura);
+  console.log('  - venue.horaFechamento:', venue?.horaFechamento);
   const slotHeight = 48;
   
   // Lógica de filtro corrigida: sempre mostrar eventos do local selecionado
   const filteredEvents = events.filter(event => {
-    // Sempre filtrar por local quando há um selecionado
+    // Filtrar por local usando o nome do local
     return event.venue === selectedVenue;
   });
 
@@ -184,7 +204,7 @@ const EventTimeline = ({
                 day: '2-digit', 
                 month: 'long' 
               })}
-              {selectedVenue && selectedVenue !== 'all' && selectedVenue !== '' && (
+              {selectedVenue && (
                 <span className="text-sm text-gray-600 ml-2">({selectedVenue}) - Intervalo: {interval}min</span>
               )}
             </h3>
