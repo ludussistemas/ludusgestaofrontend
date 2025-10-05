@@ -2,7 +2,8 @@
 import { Listagem } from '@/core/components/listagem';
 import { useRecebiveis } from '@/hooks/useRecebiveis';
 import type { Recebivel } from '@/types';
-import { AlertTriangle, CheckCircle, CreditCard, DollarSign, Edit, Plus, TrendingUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle, CreditCard, DollarSign, Edit, Plus, TrendingUp, XOctagon, RotateCcw } from 'lucide-react';
+import { SituacaoRecebivel } from '@/types/enums/situacao-recebivel';
 import { useNavigate } from 'react-router-dom';
 
 const Recebiveis = () => {
@@ -103,17 +104,27 @@ const Recebiveis = () => {
       ]}
       acoes={[
         {
-          titulo: 'Editar',
-          onClick: (recebivel) => navigate(`/eventos/recebiveis/${recebivel.id}`),
-          variante: 'outline',
-          icone: <Edit className="h-4 w-4" />
-        },
-        {
           titulo: 'Receber',
           onClick: (recebivel) => navigate(`/eventos/recebiveis/${recebivel.id}/receber`),
           variante: 'default',
           icone: <CreditCard className="h-4 w-4" />,
           mostrar: (recebivel) => recebivel.situacao === 1 || recebivel.situacao === 2 // Aberto ou Vencido
+        },
+        {
+          titulo: 'Cancelar',
+          icone: <XOctagon className="h-4 w-4" />,
+          onClick: async (recebivel) => {
+            await hook.updateRecebivel(recebivel.id, { situacao: SituacaoRecebivel.Cancelado });
+          },
+          mostrar: (recebivel) => recebivel.situacao !== SituacaoRecebivel.Cancelado && recebivel.situacao !== SituacaoRecebivel.Pago
+        },
+        {
+          titulo: 'Estornar',
+          icone: <RotateCcw className="h-4 w-4" />,
+          onClick: async (recebivel) => {
+            await hook.updateRecebivel(recebivel.id, { situacao: SituacaoRecebivel.Estornado });
+          },
+          mostrar: (recebivel) => recebivel.situacao === SituacaoRecebivel.Pago
         }
       ]}
       botaoCriar={{

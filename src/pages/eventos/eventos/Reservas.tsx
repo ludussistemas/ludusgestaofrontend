@@ -1,7 +1,8 @@
 import { Listagem } from '@/core/components/listagem';
 import { useReservas } from '@/hooks/useReservas';
 import type { Reserva } from '@/types';
-import { Calendar, Clock, MapPin, Plus, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, Plus, User, CheckCircle2, XCircle, Flag } from 'lucide-react';
+import { SituacaoReserva } from '@/types/enums/situacao-reserva';
 import { useNavigate } from 'react-router-dom';
 
 const Reservas = () => {
@@ -139,14 +140,33 @@ const Reservas = () => {
       ]}
       acoes={[
         {
-          titulo: 'Editar',
-          onClick: (reserva) => navigate(`/eventos/reserva/${reserva.id}/editar`),
-          variante: 'outline'
-        },
-        {
           titulo: 'Visualizar',
           onClick: (reserva) => navigate(`/eventos/reserva/${reserva.id}`),
           variante: 'default'
+        },
+        {
+          titulo: 'Confirmar',
+          icone: <CheckCircle2 className="h-4 w-4" />,
+          onClick: async (reserva) => {
+            await hook.confirmarReserva(reserva.id);
+          },
+          mostrar: (reserva) => reserva.situacao === SituacaoReserva.Pendente
+        },
+        {
+          titulo: 'Finalizar',
+          icone: <Flag className="h-4 w-4" />,
+          onClick: async (reserva) => {
+            await hook.finalizarReserva(reserva.id);
+          },
+          mostrar: (reserva) => reserva.situacao === SituacaoReserva.Confirmada
+        },
+        {
+          titulo: 'Cancelar',
+          icone: <XCircle className="h-4 w-4" />,
+          onClick: async (reserva) => {
+            await hook.cancelarReserva(reserva.id, 'Cancelado via lista');
+          },
+          mostrar: (reserva) => reserva.situacao !== SituacaoReserva.Cancelada
         }
       ]}
       botaoCriar={{

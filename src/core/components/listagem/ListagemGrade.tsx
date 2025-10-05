@@ -3,6 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
 import { ListagemCelula } from './ListagemCelula';
 import { useListagem } from './ListagemContext';
 import { ListagemPaginacao } from './ListagemPaginacao';
@@ -33,7 +34,7 @@ export function ListagemGrade() {
         onClick: (item: any) => navigate(`${config.rotaEntidade}/${item.id}`),
         variante: 'outline' as const,
         mostrar: undefined,
-        icone: undefined,
+        icone: <Pencil className="h-4 w-4 mr-1" />,
         className: undefined,
       }
     ];
@@ -62,7 +63,7 @@ export function ListagemGrade() {
               className="hover:shadow-lg transition-shadow"
             >
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
+                <CardTitle className="text-left text-lg font-semibold text-foreground line-clamp-2">
                   {colunaTitulo && (
                     <ListagemCelula
                       item={item}
@@ -76,7 +77,7 @@ export function ListagemGrade() {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 text-left">
                 <div className="space-y-3">
                   {/* Informações principais em linhas individuais */}
                   {colunasSecundarias.filter(coluna => 
@@ -88,15 +89,23 @@ export function ListagemGrade() {
                         {coluna.titulo}
                       </span>
                       <div className="text-sm font-medium">
-                        <ListagemCelula
-                          item={item}
-                          chave={String(coluna.chave)}
-                          tipo={coluna.tipo}
-                          opcoesSituacao={coluna.opcoesSituacao}
-                          mapeamentoValores={coluna.mapeamentoValores}
-                          tipoEntidade={coluna.tipoEntidade}
-                          cortarTextoComQuantCaracteres={coluna.cortarTextoComQuantCaracteres}
-                        />
+                        {coluna.tipo === 'cor' ? (
+                          <div
+                            className="h-3 rounded w-full"
+                            style={{ backgroundColor: (item as any)[String(coluna.chave)] || '#e5e7eb' }}
+                          />
+                        ) : (
+                          <ListagemCelula
+                            item={item}
+                            chave={String(coluna.chave)}
+                            tipo={coluna.tipo}
+                            opcoesSituacao={coluna.opcoesSituacao}
+                            mapeamentoValores={coluna.mapeamentoValores}
+                            tipoEntidade={coluna.tipoEntidade}
+                            cortarTextoComQuantCaracteres={coluna.cortarTextoComQuantCaracteres}
+                            centralizar={false}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -149,7 +158,7 @@ export function ListagemGrade() {
               </CardContent>
               {acoesComPadrao.length > 0 && (
                 <CardFooter className="pt-4 border-t bg-muted/30">
-                  <div className="flex gap-2 w-full">
+                  <div className="flex flex-wrap gap-2 w-full">
                     {acoesComPadrao.map((acao, index) => {
                       if (acao.mostrar && !acao.mostrar(item)) {
                         return null;
@@ -167,7 +176,7 @@ export function ListagemGrade() {
                               acao.onClick(item);
                             }
                           }}
-                          className={cn("flex-1 text-xs", acao.className)}
+                          className={cn("text-xs whitespace-nowrap", acao.className)}
                         >
                           {acao.icone}
                           {acao.titulo}

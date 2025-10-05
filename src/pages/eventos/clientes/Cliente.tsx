@@ -29,7 +29,7 @@ interface ClienteFormData {
   estado: string;
   cep: string;
   observacoes: string;
-  status: 'ativo' | 'inativo';
+  // status removido do formulário; definido via ações na lista
 }
 
 const Cliente = () => {
@@ -50,8 +50,7 @@ const Cliente = () => {
     cidade: '',
     estado: '',
     cep: '',
-    observacoes: '',
-    status: 'ativo'
+    observacoes: ''
   });
 
   // Carregar dados do cliente se for edição
@@ -71,8 +70,7 @@ const Cliente = () => {
               cidade: '',
               estado: '',
               cep: '',
-              observacoes: cliente.observacoes || '',
-              status: cliente.situacao === 1 ? 'ativo' : 'inativo'
+              observacoes: cliente.observacoes || ''
             });
           }
         } catch (error) {
@@ -120,7 +118,7 @@ const Cliente = () => {
       telefone: formData.telefone,
       endereco: formData.endereco,
       observacoes: formData.observacoes,
-      situacao: formData.status === 'ativo' ? SituacaoCliente.Ativo : SituacaoCliente.Inativo
+      // Situação será alterada via ações na lista
     };
 
     if (isEdit && id) {
@@ -282,14 +280,7 @@ const Cliente = () => {
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="status"
-              checked={formData.status === 'ativo'}
-              onCheckedChange={(checked) => handleChange('status', checked ? 'ativo' : 'inativo')}
-            />
-            <Label htmlFor="status">Cliente Ativo</Label>
-          </div>
+          {null}
         </div>
       )
     }

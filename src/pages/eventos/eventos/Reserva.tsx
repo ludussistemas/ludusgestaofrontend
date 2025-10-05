@@ -18,6 +18,7 @@ import { useClientes } from '@/hooks/useClientes';
 import { useLocais } from '@/hooks/useLocais';
 import { useReservas } from '@/hooks/useReservas';
 import { CreditCard, Edit, Plus, Repeat, X } from 'lucide-react';
+import { SituacaoReserva } from '@/types/enums/situacao-reserva';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -38,7 +39,6 @@ interface ReservationFormData {
   totalHours: number;
   totalMinutes: number;
   // Novos campos conforme documentação
-  situacao: number; // SituacaoReserva (1=Pendente, 2=Confirmada, 3=Cancelada, 4=Finalizada, 5=Expirada)
   cor: string; // Cor para identificação visual
   esporte: string; // Esporte/atividade
   usuarioId: string | null; // ID do usuário (opcional)
@@ -51,7 +51,7 @@ const Reserva = () => {
 
   // Estado único para controlar edição
   const [isEdit, setIsEdit] = useState(false);
-  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const [formData, setFormData] = useState<ReservationFormData>({
@@ -70,7 +70,6 @@ const Reserva = () => {
     totalHours: 0,
     totalMinutes: 0,
     // Novos campos conforme documentação
-    situacao: 1, // Pendente por padrão
     cor: '#3b82f6', // Azul por padrão
     esporte: '',
     usuarioId: null
@@ -131,7 +130,7 @@ const Reserva = () => {
     const loadReservaData = async () => {
       try {
         setIsEdit(true);
-        setEditingEventId(parseInt(id));
+        setEditingEventId(id);
         
         const reserva = await getReserva(id);
         if (!reserva) return;
@@ -162,7 +161,6 @@ const Reserva = () => {
           hourlyRate: local?.valorHora || 80,
           totalHours: 0,
           totalMinutes: 0,
-          situacao: reserva.situacao || 1,
           cor: reserva.cor || '#3b82f6',
           esporte: reserva.esporte || '',
           usuarioId: reserva.usuarioId || null
@@ -212,6 +210,13 @@ const Reserva = () => {
     if (!venueId) return '';
     const venue = locais.find(l => l.id === venueId);
     return venue?.nome || '';
+  };
+
+  const getVenueColor = () => {
+    const venueId = getVenueId();
+    if (!venueId) return '#3b82f6';
+    const venue = locais.find(l => l.id === venueId);
+    return venue?.cor || '#3b82f6';
   };
 
 
@@ -304,7 +309,8 @@ const Reserva = () => {
       venue: localId,
       startTime: '', // Reset horários quando trocar local
       endTime: '',
-      hourlyRate: selectedVenue?.valorHora || 80
+      hourlyRate: selectedVenue?.valorHora || 80,
+      cor: selectedVenue?.cor || prev.cor
     }));
   };
 
@@ -363,8 +369,8 @@ const Reserva = () => {
           `${formData.date.toISOString().split('T')[0]}T${formData.startTime}:00Z` : '',
         dataFim: formData.date && formData.endTime ? 
           `${formData.date.toISOString().split('T')[0]}T${formData.endTime}:00Z` : '',
-        situacao: formData.situacao,
-        cor: formData.cor,
+        situacao: SituacaoReserva.Pendente,
+        cor: getVenueColor(),
         esporte: formData.esporte,
         observacoes: formData.observations,
         valor: parseFloat(formData.amount) || totalValue
@@ -384,8 +390,8 @@ const Reserva = () => {
           `${formData.date.toISOString().split('T')[0]}T${formData.startTime}:00Z` : '',
         dataFim: formData.date && formData.endTime ? 
           `${formData.date.toISOString().split('T')[0]}T${formData.endTime}:00Z` : '',
-        situacao: formData.situacao,
-        cor: formData.cor,
+        situacao: SituacaoReserva.Pendente,
+        cor: getVenueColor(),
         esporte: formData.esporte,
         observacoes: formData.observations,
         valor: parseFloat(formData.amount) || totalValue
@@ -424,8 +430,6 @@ const Reserva = () => {
         hourlyRate: 80,
         totalHours: 0,
         totalMinutes: 0,
-        // Novos campos conforme documentação
-        situacao: 1,
         cor: '#3b82f6',
         esporte: '',
         usuarioId: null
@@ -660,43 +664,7 @@ const Reserva = () => {
 
                 {/* Novos campos conforme documentação */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="situacao">Situação</Label>
-                    <Select 
-                      value={formData.situacao.toString()} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, situacao: parseInt(value) }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a situação..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Pendente</SelectItem>
-                        <SelectItem value="2">Confirmada</SelectItem>
-                        <SelectItem value="3">Cancelada</SelectItem>
-                        <SelectItem value="4">Finalizada</SelectItem>
-                        <SelectItem value="5">Expirada</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cor">Cor</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="cor"
-                        type="color"
-                        value={formData.cor}
-                        onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
-                        className="w-16 h-10 p-1"
-                      />
-                      <Input
-                        value={formData.cor}
-                        onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
-                        placeholder="#3b82f6"
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
+                  {null}
 
                   <div>
                     <Label htmlFor="esporte">Esporte/Atividade</Label>
@@ -816,7 +784,7 @@ const Reserva = () => {
                       amount: '160'
                     }));
                     setIsEdit(true);
-                    setEditingEventId(event.id);
+                    setEditingEventId(String(event.id));
                   }}
                   editingEventId={editingEventId}
                   onEventSelect={(event) => {
@@ -835,7 +803,7 @@ const Reserva = () => {
                       amount: '160'
                     }));
                     setIsEdit(true);
-                    setEditingEventId(event.id);
+                    setEditingEventId(String(event.id));
                   }}
                   onCancelEdit={handleCancelEdit}
                   onDeleteEvent={deleteReserva}

@@ -257,7 +257,7 @@ export const useReservas = () => {
           startTime: reserva.dataInicio?.split('T')[1]?.substring(0, 5) || '',
           endTime: reserva.dataFim?.split('T')[1]?.substring(0, 5) || '',
           status: reserva.situacao === 1 ? 'confirmed' : 'pending',
-          color: reserva.situacao === 1 ? '#10b981' : '#f59e0b',
+          color: local?.cor || '#6b7280',
           sport: local?.tipo || '',
           notes: reserva.observacoes || ''
         };

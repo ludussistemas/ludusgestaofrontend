@@ -2,6 +2,8 @@
 import { usePermissoesUsuario } from '@/contexts/PermissoesUsuarioContext';
 import { Listagem } from '@/core/components/listagem';
 import { useClientes } from '@/hooks/useClientes';
+import { SituacaoCliente } from '@/types/enums/situacao-cliente';
+import { Trash2, UserCheck as UserAtivar } from 'lucide-react';
 import type { Cliente } from '@/types';
 import { Calendar, UserCheck, UserPlus, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -115,6 +117,22 @@ export default function Clientes() {
           titulo: 'Editar',
           onClick: (cliente) => navigate(`/eventos/clientes/${cliente.id}`),
           variante: 'outline',
+        },
+        {
+          titulo: 'Inativar',
+          icone: <Trash2 className="h-4 w-4" />,
+          onClick: async (cliente) => {
+            await hook.updateCliente(cliente.id, { situacao: SituacaoCliente.Inativo });
+          },
+          mostrar: (cliente) => cliente.situacao === SituacaoCliente.Ativo,
+        },
+        {
+          titulo: 'Ativar',
+          icone: <UserAtivar className="h-4 w-4" />,
+          onClick: async (cliente) => {
+            await hook.updateCliente(cliente.id, { situacao: SituacaoCliente.Ativo });
+          },
+          mostrar: (cliente) => cliente.situacao === SituacaoCliente.Inativo,
         },
       ] : []}
       botaoCriar={hasClientesAccess() ? {

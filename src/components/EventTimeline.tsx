@@ -16,7 +16,7 @@ import { useState } from 'react';
 import EmptyTimelineState from './EmptyTimelineState';
 
 interface Event {
-  id: number;
+  id: string;
   client: string;
   venue: string;
   startTime: string;
@@ -32,10 +32,10 @@ interface EventTimelineProps {
   selectedVenue?: string;
   onTimeSlotClick?: (time: string) => void;
   onEventEdit?: (event: Event) => void;
-  editingEventId?: number | null;
+  editingEventId?: string | null;
   onEventSelect?: (event: Event) => void;
   onCancelEdit?: () => void;
-  onDeleteEvent?: (eventId: number) => void;
+  onDeleteEvent?: (eventId: string) => void;
   loading?: boolean;
   getLocalByName?: (venueName: string) => any;
   locais?: any[];
@@ -61,7 +61,7 @@ const EventTimeline = ({
   // Usar locais passados como prop ou do hook
   const locais = propLocais || hookLocais;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<number | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   
   // Se não há local selecionado ou está vazio, mostrar estado vazio
   if (!selectedVenue || selectedVenue === '' || selectedVenue === 'all') {
@@ -148,7 +148,7 @@ const EventTimeline = ({
     }
   };
 
-  const handleDeleteEvent = (eventId: number) => {
+  const handleDeleteEvent = (eventId: string) => {
     setEventToDelete(eventId);
     setDeleteDialogOpen(true);
   };
@@ -262,21 +262,22 @@ const EventTimeline = ({
               const endMinutes = timeToMinutes(event.endTime);
               const duration = endMinutes - startMinutes;
               
-              const baseHour = 7 * 60;
-              const topOffset = ((startMinutes - baseHour) / interval) * slotHeight;
+              const [openH = 7, openM = 0] = (venue?.horaAbertura || '07:00').split(':').map(Number);
+              const openMinutes = openH * 60 + openM;
+              const topOffset = ((startMinutes - openMinutes) / interval) * slotHeight;
               const height = (duration / interval) * slotHeight;
 
               const isCurrentlyEditing = editingEventId === event.id;
               const isDisabledEvent = isEditingMode && !isCurrentlyEditing;
               const venueColor = getVenueColor(event.venue);
               
-              // Usar cor do módulo durante edição, cor do local normalmente
+              // Cor do local; quando em edição, destacar com tom amarelo (mesma linguagem visual do aviso)
               const backgroundColor = isCurrentlyEditing 
-                ? 'rgb(var(--module-events) / 0.1)'
-                : `${venueColor}15`; // Hex para RGB com transparência
+                ? 'rgb(234 179 8 / 0.25)'
+                : venueColor;
               
               const borderColor = isCurrentlyEditing 
-                ? 'rgb(var(--module-events))'
+                ? 'rgb(234 179 8)'
                 : venueColor;
 
               return (
@@ -295,78 +296,75 @@ const EventTimeline = ({
                   }}
                   onClick={() => !isDisabledEvent && handleEventClick(event)}
                 >
-                  <div className="p-2 h-full overflow-hidden flex">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-1">
-                        <User className="h-3 w-3 text-gray-600 flex-shrink-0" />
-                        <span className="font-semibold text-xs truncate">{event.client}</span>
-                      </div>
-                      
-                      {/* Sempre mostrar horário */}
-                      <div className="text-xs text-gray-500 font-medium">
-                        {event.startTime} - {event.endTime}
-                      </div>
-                      
-                      {/* Mostrar local apenas se há espaço ou sempre em cards pequenos */}
-                      {(height > 60 || height <= 48) && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-gray-500 flex-shrink-0" />
-                          <span className="text-xs text-gray-600 truncate">{event.venue}</span>
+                  {(() => {
+                    const textColor = isCurrentlyEditing ? 'text-amber-900' : 'text-white';
+                    const iconMuted = isCurrentlyEditing ? 'text-amber-900/90' : 'text-white/90';
+                    const secondary = isCurrentlyEditing ? 'text-amber-900/90' : 'text-white/90';
+                    return (
+                      <div className={`p-2 h-full overflow-hidden flex ${textColor}`}>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-1">
+                            <User className={`h-3 w-3 ${iconMuted} flex-shrink-0`} />
+                            <span className={`font-semibold text-xs truncate ${textColor}`}>{event.client}</span>
+                          </div>
+                          <div className={`text-xs font-medium ${secondary}`}>
+                            {event.startTime} - {event.endTime}
+                          </div>
+                          {(height > 60 || height <= 48) && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className={`h-3 w-3 ${iconMuted} flex-shrink-0`} />
+                              <span className={`text-xs truncate ${secondary}`}>{event.venue}</span>
+                            </div>
+                          )}
+                          {event.sport && height > 80 && (
+                            <div className={`text-xs truncate ${secondary}`}>
+                              {event.sport}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <div className={`h-1.5 w-1.5 rounded-full ${
+                              event.status === 'confirmed' ? 'bg-green-500' :
+                              event.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                            }`} />
+                            {height > 60 && (
+                              <span className={`text-xs capitalize ${secondary}`}>
+                                {event.status === 'confirmed' ? 'Confirmado' :
+                                 event.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      
-                      {/* Esporte/título apenas se há bastante espaço */}
-                      {event.sport && height > 80 && (
-                        <div className="text-xs text-gray-500 truncate">
-                          {event.sport}
-                        </div>
-                      )}
-                      
-                      {/* Status sempre visível */}
-                      <div className="flex items-center gap-1">
-                        <div className={`h-1.5 w-1.5 rounded-full ${
-                          event.status === 'confirmed' ? 'bg-green-500' :
-                          event.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
-                        }`} />
-                        {height > 60 && (
-                          <span className="text-xs text-gray-500 capitalize">
-                            {event.status === 'confirmed' ? 'Confirmado' :
-                             event.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                          </span>
+                        {isCurrentlyEditing && (
+                          <div className="flex flex-col gap-1 ml-2 flex-shrink-0 justify-start">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEvent(event.id);
+                              }}
+                              className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash className="h-3 w-3" />
+                            </Button>
+                            {onCancelEdit && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCancelEdit();
+                                }}
+                                className="h-5 w-5 p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
-                    </div>
-                    
-                    {/* Botões sempre visíveis quando editando */}
-                    {isCurrentlyEditing && (
-                      <div className="flex flex-col gap-1 ml-2 flex-shrink-0 justify-start">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEvent(event.id);
-                          }}
-                          className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash className="h-3 w-3" />
-                        </Button>
-                        {onCancelEdit && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onCancelEdit();
-                            }}
-                            className="h-5 w-5 p-0"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                    );
+                  })()}
                 </div>
               );
             })}

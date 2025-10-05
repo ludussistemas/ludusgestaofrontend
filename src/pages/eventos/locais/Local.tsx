@@ -25,7 +25,6 @@ interface LocalFormData {
   capacidade: string;
   descricao: string;
   comodidades: string[];
-  situacao: string;
   intervalo: string;
   horaAbertura: string;
   horaFechamento: string;
@@ -46,7 +45,6 @@ const Local = () => {
     capacidade: '',
     descricao: '',
     comodidades: [],
-    situacao: '1', // Ativo
     intervalo: '60',
     horaAbertura: '08:00',
     horaFechamento: '22:00'
@@ -67,7 +65,6 @@ const Local = () => {
               capacidade: local.capacidade?.toString() || '',
               descricao: local.descricao || '',
               comodidades: local.comodidades || [],
-              situacao: local.situacao?.toString() || '1',
               intervalo: local.intervalo?.toString() || '60',
               horaAbertura: local.horaAbertura || '08:00',
               horaFechamento: local.horaFechamento || '22:00'
@@ -125,7 +122,6 @@ const Local = () => {
         capacidade: formData.capacidade ? parseInt(formData.capacidade) : 0,
         descricao: formData.descricao.trim(),
         comodidades: formData.comodidades,
-        situacao: parseInt(formData.situacao) as SituacaoLocal,
         intervalo: parseInt(formData.intervalo) || 60,
         horaAbertura: formData.horaAbertura,
         horaFechamento: formData.horaFechamento
@@ -374,22 +370,7 @@ const Local = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="situacao">Status</Label>
-            <Select
-              value={formData.situacao}
-              onValueChange={(value) => handleChange('situacao', value)}
-            >
-              <SelectTrigger id="situacao" className="h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Ativo</SelectItem>
-                <SelectItem value="2">Inativo</SelectItem>
-                <SelectItem value="3">Em Manutenção</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {null}
         </div>
       )
     }

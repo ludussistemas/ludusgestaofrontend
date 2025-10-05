@@ -14,13 +14,14 @@ import { useRecebiveis } from '@/hooks/useRecebiveis';
 import { CreditCard } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { SituacaoRecebivel } from '@/types/enums/situacao-recebivel';
 
 interface RecebivelFormData {
   clienteId: string;
   descricao: string;
   valor: string;
   dataVencimento: Date | undefined;
-  situacao: 'pendente' | 'pago' | 'vencido';
   reservaId?: string;
 }
 
@@ -38,9 +39,10 @@ const Recebivel = () => {
     descricao: '',
     valor: '',
     dataVencimento: new Date(),
-    situacao: 'pendente',
     reservaId: ''
   });
+
+  const [currentSituacao, setCurrentSituacao] = useState<SituacaoRecebivel>(SituacaoRecebivel.Aberto);
 
   // Carregar dados do recebível se for edição
   useEffect(() => {
@@ -54,9 +56,9 @@ const Recebivel = () => {
               descricao: recebivel.descricao,
               valor: recebivel.valor.toString(),
               dataVencimento: new Date(recebivel.dataVencimento),
-              situacao: recebivel.situacao as 'pendente' | 'pago' | 'vencido',
               reservaId: recebivel.reservaId || ''
             });
+            setCurrentSituacao(recebivel.situacao);
           }
         } catch (error) {
           console.error('Erro ao carregar recebível:', error);
@@ -109,7 +111,7 @@ const Recebivel = () => {
         descricao: formData.descricao,
         valor: parseFloat(formData.valor) || 0,
         dataVencimento: formData.dataVencimento.toISOString().split('T')[0],
-        situacao: formData.situacao,
+        situacao: isEdit ? currentSituacao : SituacaoRecebivel.Aberto,
         reservaId: formData.reservaId || null
       };
 
@@ -144,7 +146,7 @@ const Recebivel = () => {
             onChange={(value, item) => handleChange('clienteId', item?.id || value)}
             items={clientesExemplo}
             placeholder="Selecione o cliente..."
-            onLoadById={getClienteById}
+            onLoadById={async (id) => getClienteById(id)}
             required
           />
 
@@ -195,22 +197,7 @@ const Recebivel = () => {
             required
           />
 
-          <div className="space-y-2">
-            <Label htmlFor="situacao">Situação</Label>
-            <Select 
-              value={formData.situacao} 
-              onValueChange={(value) => handleChange('situacao', value as 'pendente' | 'pago' | 'vencido')}
-            >
-              <SelectTrigger id="situacao" className="h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-                <SelectItem value="vencido">Vencido</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {null}
         </div>
       )
     }

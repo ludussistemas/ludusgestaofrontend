@@ -26,6 +26,7 @@ import {
 import { FileX, MoreHorizontal } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
 import { ListagemCabecalho } from './ListagemCabecalho';
 import { ListagemCelula } from './ListagemCelula';
 import { useListagem } from './ListagemContext';
@@ -120,7 +121,7 @@ export function ListagemTabela() {
         onClick: (item: any) => navigate(`${config.rotaEntidade}/${item.id}`),
         variante: 'outline' as const,
         mostrar: undefined,
-        icone: undefined,
+        icone: <Pencil className="h-4 w-4 mr-1" />,
         className: undefined,
       }
     ];

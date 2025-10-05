@@ -4,6 +4,8 @@ import { useLocais } from '@/hooks/useLocais';
 import type { Local } from '@/types';
 import { Activity, Building, Clock, DollarSign, MapPin, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Wrench, Power, Trash2 } from 'lucide-react';
+import { SituacaoLocal } from '@/types/enums/situacao-local';
 
 const Locais = () => {
   const navigate = useNavigate();
@@ -146,9 +148,28 @@ const Locais = () => {
       ]}
       acoes={[
         {
-          titulo: 'Editar',
-          onClick: (local) => navigate(`/eventos/locais/${local.id}`),
-          variante: 'outline'
+          titulo: 'Colocar em Manutenção',
+          icone: <Wrench className="h-4 w-4" />,
+          onClick: async (local) => {
+            await hook.updateLocal(local.id, { situacao: SituacaoLocal.Manutencao });
+          },
+          mostrar: (local) => local.situacao !== SituacaoLocal.Manutencao
+        },
+        {
+          titulo: 'Ativar',
+          icone: <Power className="h-4 w-4" />,
+          onClick: async (local) => {
+            await hook.updateLocal(local.id, { situacao: SituacaoLocal.Ativo });
+          },
+          mostrar: (local) => local.situacao !== SituacaoLocal.Ativo
+        },
+        {
+          titulo: 'Inativar',
+          icone: <Trash2 className="h-4 w-4" />,
+          onClick: async (local) => {
+            await hook.updateLocal(local.id, { situacao: SituacaoLocal.Inativo });
+          },
+          mostrar: (local) => local.situacao !== SituacaoLocal.Inativo
         }
       ]}
       botaoCriar={{
