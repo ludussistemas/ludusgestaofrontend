@@ -117,33 +117,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           filiais: filiais ? filiais.length : 0
         });
         
-        // Atualizar estado
-        setUser(usuario);
-        setIsAuthenticated(true);
-        
         // Processar filiais que vêm diretamente do login
+        let primeiraFilial = null;
         if (filiais && filiais.length > 0) {
-          setFiliais(filiais);
           localStorage.setItem('userFiliais', JSON.stringify(filiais));
-          
-          // Definir filial atual (primeira por padrão)
-          const primeiraFilial = filiais[0];
-          setFilialAtual(primeiraFilial);
+          primeiraFilial = filiais[0];
           localStorage.setItem('filialAtual', JSON.stringify(primeiraFilial));
           
           // Definir filial na API para headers automáticos
           api.setFilial(primeiraFilial.id);
+          console.log('🏢 Filial definida na API:', primeiraFilial.id);
         }
+        
+        // Atualizar estado do React em sequência
+        setUser(usuario);
+        setFiliais(filiais || []);
+        setFilialAtual(primeiraFilial);
+        setIsAuthenticated(true);
+        
+        console.log('✅ Estados do React atualizados:', {
+          userId: usuario.id,
+          filialId: primeiraFilial?.id,
+          filiaisCount: filiais?.length || 0
+        });
         
         // Carregar dados completos do usuário (empresa)
         await fetchUserCompleteData(usuario.id);
         
-        // Forçar carregamento de permissões após login
-        console.log('🔐 Forçando carregamento de permissões após login...');
         // Disparar evento customizado para notificar o contexto de permissões
-        const filialId = filiais && filiais.length > 0 ? filiais[0].id : null;
+        console.log('🔐 Disparando evento de login para carregar permissões...', {
+          userId: usuario.id,
+          filialId: primeiraFilial?.id
+        });
         window.dispatchEvent(new CustomEvent('userLoggedIn', { 
-          detail: { userId: usuario.id, filialId } 
+          detail: { userId: usuario.id, filialId: primeiraFilial?.id } 
         }));
         
         toast.success('Login realizado com sucesso!');
@@ -226,32 +233,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Configurar tokens na API
         api.setTokens(accessToken, refreshToken);
         
-        // Restaurar estado
-        setUser(userData);
-        setEmpresa(empresaData);
-        setFiliais(filiaisData);
-        
         // Definir filial atual
         const filialAtual = filialAtualData || (filiaisData.length > 0 ? filiaisData[0] : null);
-        setFilialAtual(filialAtual);
-        setIsAuthenticated(true);
         
         // Definir filial na API para headers automáticos
         if (filialAtual?.id) {
           api.setFilial(filialAtual.id);
+          console.log('🏢 Filial definida na API durante restauração:', filialAtual.id);
         }
         
-        console.log('✅ Sessão restaurada com sucesso');
+        // Restaurar estado do React
+        setUser(userData);
+        setEmpresa(empresaData);
+        setFiliais(filiaisData);
+        setFilialAtual(filialAtual);
+        setIsAuthenticated(true);
+        
+        console.log('✅ Sessão restaurada com sucesso:', {
+          userId: userData?.id,
+          filialId: filialAtual?.id,
+          filiaisCount: filiaisData.length
+        });
         
         // Buscar dados mais recentes em background
         if (userData?.id) {
           await fetchUserCompleteData(userData.id);
         }
         
-        // Forçar carregamento de permissões após restauração de sessão
-        console.log('🔐 Forçando carregamento de permissões após restauração de sessão...');
+        // Disparar evento para carregar permissões após restauração de sessão
+        console.log('🔐 Disparando evento de login para carregar permissões após restauração...', {
+          userId: userData?.id,
+          filialId: filialAtual?.id
+        });
         window.dispatchEvent(new CustomEvent('userLoggedIn', { 
-          detail: { userId: userData.id, filialId: filialAtual?.id } 
+          detail: { userId: userData?.id, filialId: filialAtual?.id } 
         }));
       }
     };

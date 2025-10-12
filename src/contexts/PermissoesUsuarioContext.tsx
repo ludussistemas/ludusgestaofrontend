@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 // ============================================================================
 // SISTEMA DE PERMISSÕES - MAPEAMENTO COMPLETO
@@ -108,6 +108,7 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
   });
   const [loading, setLoading] = useState(false);
   const [permissoesCarregadas, setPermissoesCarregadas] = useState(false);
+  const isLoadingRef = useRef(false); // Flag para prevenir chamadas simultâneas
 
   // Função para buscar permissões do usuário via endpoint usuariopermissao/menu
   const fetchUserPermissions = useCallback(async () => {
@@ -118,7 +119,14 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
       return;
     }
 
+    // Prevenir múltiplas chamadas simultâneas
+    if (isLoadingRef.current) {
+      console.log('⏸️ Já existe um carregamento de permissões em andamento, ignorando...');
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       // Usar endpoint correto conforme documentação
       const endpoint = `usuariopermissao/menu?usuarioId=${user.id}&filialId=${filialAtual.id}`;
@@ -190,6 +198,7 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
       }
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   }, [user?.id, filialAtual?.id]);
 
@@ -407,34 +416,49 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
     }
   };
 
-  // Buscar permissões quando usuário ou filial mudarem
+  // Effect principal: Buscar permissões quando usuário ou filial mudarem
   useEffect(() => {
     if (user?.id && filialAtual?.id) {
-      console.log('🔄 Iniciando carregamento de permissões...', { userId: user.id, filialId: filialAtual.id });
-      fetchUserPermissions();
-    } else {
-      console.log('⚠️ Usuário ou filial não disponível, limpando permissões');
-      setPermissoes([]);
-      setModulos([]);
-    }
-  }, [user?.id, filialAtual?.id]);
-
-  // Escutar evento de login para forçar carregamento de permissões
-  useEffect(() => {
-    const handleUserLoggedIn = (event: CustomEvent) => {
-      const { userId, filialId } = event.detail;
-      console.log('🔐 Evento de login recebido, forçando carregamento de permissões...', { userId, filialId });
+      console.log('🔄 [Effect Principal] Usuário ou filial mudaram, verificando necessidade de carregar permissões...', { 
+        userId: user.id, 
+        filialId: filialAtual.id,
+        permissoesCarregadas,
+        isLoading: isLoadingRef.current
+      });
       
-      // Limpar cache anterior
+      // Só carregar se não estiver carregando e não tiver carregado ainda
+      if (!isLoadingRef.current && !permissoesCarregadas) {
+        console.log('✅ Iniciando carregamento de permissões...');
+        fetchUserPermissions();
+      } else {
+        console.log('⏭️ Permissões já carregadas ou em carregamento, ignorando...');
+      }
+    } else {
+      console.log('⚠️ [Effect Principal] Usuário ou filial não disponível, limpando permissões');
       setPermissoes([]);
       setModulos([]);
       setPermissoesCarregadas(false);
+    }
+  }, [user?.id, filialAtual?.id, permissoesCarregadas, fetchUserPermissions]);
+
+  // Effect secundário: Escutar evento de login para forçar recarregamento
+  useEffect(() => {
+    const handleUserLoggedIn = (event: CustomEvent) => {
+      const { userId, filialId } = event.detail;
+      console.log('🔐 [Effect Evento] Evento de login recebido!', { 
+        userId, 
+        filialId,
+        currentUser: user?.id,
+        currentFilial: filialAtual?.id
+      });
       
-      // Aguardar um pouco para garantir que o estado foi atualizado
-      setTimeout(() => {
-        console.log('🔄 Executando carregamento forçado de permissões...');
-        fetchUserPermissions();
-      }, 200);
+      // Limpar cache e flags para forçar recarregamento
+      setPermissoes([]);
+      setModulos([]);
+      setPermissoesCarregadas(false);
+      isLoadingRef.current = false;
+      
+      console.log('🧹 Cache limpo, aguardando Effect Principal recarregar...');
     };
 
     window.addEventListener('userLoggedIn', handleUserLoggedIn as EventListener);
@@ -442,25 +466,7 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
     return () => {
       window.removeEventListener('userLoggedIn', handleUserLoggedIn as EventListener);
     };
-  }, [fetchUserPermissions]);
-
-  // Verificar se as permissões estão vazias quando usuário e filial estão disponíveis
-  useEffect(() => {
-    if (user?.id && filialAtual?.id && permissoes.length === 0 && !loading && !permissoesCarregadas) {
-      console.log('🔍 Permissões vazias detectadas, forçando carregamento...', { 
-        userId: user.id, 
-        filialId: filialAtual.id,
-        permissoesLength: permissoes.length,
-        loading,
-        permissoesCarregadas
-      });
-      
-      // Aguardar um pouco e tentar carregar novamente
-      setTimeout(() => {
-        fetchUserPermissions();
-      }, 500);
-    }
-  }, [user?.id, filialAtual?.id, permissoes.length, loading, permissoesCarregadas, fetchUserPermissions]);
+  }, [user?.id, filialAtual?.id]);
 
   const value: PermissoesUsuarioContextType = {
     permissoes,
