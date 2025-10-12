@@ -114,7 +114,7 @@ function App() {
           <Route path="/eventos/agenda" element={<Agenda />} />
           <Route path="/eventos/reserva" element={<Reserva />} />
           <Route path="/eventos/reserva/novo" element={<Reserva />} />
-          <Route path="/eventos/reserva/:id/editar" element={<Reserva />} />
+          <Route path="/eventos/reserva/:id" element={<Reserva />} />
           <Route path="/eventos/clientes" element={<Clientes />} />
           <Route path="/eventos/clientes/novo" element={<Cliente />} />
           <Route path="/eventos/clientes/:id" element={<Cliente />} />

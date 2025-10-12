@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import { useCallback, useState } from 'react';
 import { useBaseCrud } from '../core/hooks/useBaseCrud';
-import { api, ApiResponse } from '../lib/api';
+import { api, ApiResponse, ApiPagedResponseV2 } from '../lib/api';
 import { Reserva, CreateReservaDTO, UpdateReservaDTO, Local, Cliente } from '../types';
 
 export const useReservas = () => {
@@ -38,7 +38,7 @@ export const useReservas = () => {
 
       const filtros: any = {
         page: 1,
-        limit: 1000,
+        limit: 100,  // Limite máximo aceito pela API (1-100)
         filter: JSON.stringify(filterData)
       };
 
@@ -68,7 +68,7 @@ export const useReservas = () => {
   const getReservaById = (id: string) => baseHook.data.find(r => r.id === id);
 
   const getReservasForSearch = async () => {
-    await baseHook.fetchData({ limit: 1000 });
+    await baseHook.fetchData({ limit: 100 });  // Limite máximo aceito pela API (1-100)
     return baseHook.data.map(reserva => ({
       id: reserva.id,
       label: reserva.observacoes || 'Reserva',
@@ -223,54 +223,121 @@ export const useReservas = () => {
   ) => {
     if (!data) return;
     
+    console.log('🚀 [Timeline] buscarReservasTimeline chamado com:', {
+      data,
+      localId,
+      totalLocais: locais.length,
+      totalClientes: clientes.length
+    });
+    
     try {
       setTimelineLoading(true);
       
-      // Calcular período: do dia clicado até o dia posterior
-      const dataInicio = data.toISOString().split('T')[0];
-      const dataFim = new Date(data);
-      dataFim.setDate(dataFim.getDate() + 1);
-      const dataFimStr = dataFim.toISOString().split('T')[0];
+      // Formatar datas para busca (YYYY-MM-DD local)
+      const year = data.getFullYear();
+      const month = String(data.getMonth() + 1).padStart(2, '0');
+      const day = String(data.getDate()).padStart(2, '0');
+      const dataInicio = `${year}-${month}-${day}`;
       
-      console.log('🔍 Buscando reservas para timeline:', { dataInicio, dataFim: dataFimStr, localId });
+      const nextDay = new Date(data);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const yearNext = nextDay.getFullYear();
+      const monthNext = String(nextDay.getMonth() + 1).padStart(2, '0');
+      const dayNext = String(nextDay.getDate()).padStart(2, '0');
+      const dataFim = `${yearNext}-${monthNext}-${dayNext}`;
       
-      // Buscar reservas por período
-      const localIds = localId ? [localId] : undefined;
-      await fetchReservasPorPeriodo(dataInicio, dataFimStr, localIds);
+      console.log('🔍 [Timeline] Buscando reservas:', { dataInicio, dataFim, localId });
       
-      // Filtrar reservas por local se necessário
-      const reservasFiltradas = localId 
-        ? baseHook.data.filter(reserva => reserva.localId === localId)
-        : baseHook.data;
+      // Buscar DIRETAMENTE da API
+      const filterData: any = { dataInicio, dataFim };
+      if (localId) {
+        filterData.localId = localId;
+      }
       
-      console.log('📅 Eventos carregados para timeline:', reservasFiltradas);
+      const filtros: any = {
+        page: 1,
+        limit: 100,  // Limite máximo aceito pela API (1-100)
+        filter: JSON.stringify(filterData)
+      };
+      
+      console.log('🔍 [Timeline] Filtros:', filtros);
+      
+      // Buscar diretamente da API (usa ApiPagedResponseV2 que tem 'items')
+      const response = await api.get<ApiPagedResponseV2<Reserva>>('reservas', filtros);
+      
+      console.log('📡 [Timeline] Resposta da API:', response);
+      
+      if (!response.success || !response.items || !Array.isArray(response.items)) {
+        console.warn('⚠️ [Timeline] Nenhuma reserva encontrada');
+        setTimelineEvents([]);
+        return;
+      }
+      
+      const reservas = response.items;
+      console.log('📅 [Timeline] Reservas recebidas:', reservas);
+      console.log('📊 [Timeline] Total de reservas:', reservas.length);
       
       // Transformar em eventos para timeline
-      const eventosTimeline = reservasFiltradas.map(reserva => {
+      console.log('🔍 [Timeline] Arrays disponíveis:', {
+        totalClientes: clientes.length,
+        clientesIds: clientes.map(c => c.id),
+        totalLocais: locais.length,
+        locaisIds: locais.map(l => l.id)
+      });
+      
+      const eventosTimeline = reservas.map(reserva => {
+        console.log('🔍 [Timeline] Processando reserva:', {
+          id: reserva.id,
+          clienteId: reserva.clienteId,
+          localId: reserva.localId,
+          dataInicio: reserva.dataInicio,
+          dataFim: reserva.dataFim
+        });
+        
         const cliente = clientes.find(c => c.id === reserva.clienteId);
         const local = locais.find(l => l.id === reserva.localId);
         
-        return {
+        console.log('🔍 [Timeline] Cliente/Local encontrados:', {
+          cliente: cliente ? cliente.nome : '❌ NÃO ENCONTRADO',
+          local: local ? local.nome : '❌ NÃO ENCONTRADO'
+        });
+        
+        // Converter datas UTC para horário local
+        const dataInicioDate = new Date(reserva.dataInicio);
+        const dataFimDate = new Date(reserva.dataFim);
+        
+        const startHours = String(dataInicioDate.getHours()).padStart(2, '0');
+        const startMinutes = String(dataInicioDate.getMinutes()).padStart(2, '0');
+        const endHours = String(dataFimDate.getHours()).padStart(2, '0');
+        const endMinutes = String(dataFimDate.getMinutes()).padStart(2, '0');
+        
+        const evento = {
           id: reserva.id,
           client: cliente?.nome || 'Cliente não encontrado',
           venue: local?.nome || 'Local não encontrado',
-          startTime: reserva.dataInicio?.split('T')[1]?.substring(0, 5) || '',
-          endTime: reserva.dataFim?.split('T')[1]?.substring(0, 5) || '',
+          startTime: `${startHours}:${startMinutes}`,
+          endTime: `${endHours}:${endMinutes}`,
           status: reserva.situacao === 1 ? 'confirmed' : 'pending',
-          color: local?.cor || '#6b7280',
-          sport: local?.tipo || '',
+          color: local?.cor || reserva.cor || '#6b7280',
+          sport: reserva.esporte || local?.tipo || '',
           notes: reserva.observacoes || ''
         };
+        
+        console.log('🎯 [Timeline] Evento transformado:', evento);
+        return evento;
       });
       
+      console.log('✅ [Timeline] Total de eventos transformados:', eventosTimeline.length);
       setTimelineEvents(eventosTimeline);
     } catch (error) {
-      console.error('Erro ao buscar reservas para timeline:', error);
+      console.error('❌ [Timeline] Erro ao buscar reservas:', error);
       toast.error('Erro ao carregar eventos da timeline');
+      setTimelineEvents([]);
     } finally {
       setTimelineLoading(false);
     }
-  }, [fetchReservasPorPeriodo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Função para obter configurações do local
   const getVenueConfig = useCallback((localId: string, locais: Local[]) => {

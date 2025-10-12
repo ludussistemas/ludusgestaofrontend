@@ -346,9 +346,9 @@ class Api {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const json = await response.json();
-        // Se não for ok, mas o backend retornou um JSON, repasse para o frontend tratar
+        // Se não for ok, mas o backend retornou um JSON, normalize o formato
         if (!response.ok) {
-          return json;
+          return this.normalizeErrorResponse(json);
         }
         return json;
       }
@@ -499,6 +499,59 @@ class Api {
     } else {
       console.log('⚠️ Já está na página de login, não redirecionar');
     }
+  }
+
+  /**
+   * Normaliza diferentes formatos de erro da API para um formato consistente
+   */
+  private normalizeErrorResponse(errorData: any): any {
+    // Formato 1: Padrão atual { success, message, validationErrors }
+    if (errorData.success === false) {
+      return errorData;
+    }
+    
+    // Formato 2: ASP.NET Core Problem Details { type, title, status, errors }
+    if (errorData.errors && typeof errorData.errors === 'object') {
+      // Converter errors de { "Field": ["error1", "error2"] } para formato de validationErrors
+      const validationErrors: Record<string, string> = {};
+      
+      Object.entries(errorData.errors).forEach(([field, messages]) => {
+        if (Array.isArray(messages) && messages.length > 0) {
+          validationErrors[field] = messages[0]; // Pegar primeira mensagem
+        }
+      });
+      
+      // Construir mensagem principal
+      const firstError = Object.values(validationErrors)[0] || errorData.title || 'Erro de validação';
+      
+      return {
+        success: false,
+        message: firstError,
+        data: null,
+        timestamp: new Date().toISOString(),
+        validationErrors: Object.keys(validationErrors).length > 0 ? validationErrors : null
+      };
+    }
+    
+    // Formato 3: Erro genérico com message
+    if (errorData.message) {
+      return {
+        success: false,
+        message: errorData.message,
+        data: null,
+        timestamp: new Date().toISOString(),
+        validationErrors: null
+      };
+    }
+    
+    // Fallback: retornar erro genérico
+    return {
+      success: false,
+      message: errorData.title || 'Erro ao processar requisição',
+      data: null,
+      timestamp: new Date().toISOString(),
+      validationErrors: null
+    };
   }
 
   private async handleError(response: Response): Promise<ApiError> {

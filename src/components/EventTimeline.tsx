@@ -93,10 +93,22 @@ const EventTimeline = ({
   const slotHeight = 48;
   
   // Lógica de filtro corrigida: sempre mostrar eventos do local selecionado
+  console.log('🔍 [EventTimeline] Filtrando eventos:', {
+    totalEventos: events.length,
+    selectedVenue,
+    eventosRecebidos: events.map(e => ({ id: e.id, venue: e.venue, startTime: e.startTime }))
+  });
+  
   const filteredEvents = events.filter(event => {
     // Filtrar por local usando o nome do local
-    return event.venue === selectedVenue;
+    const match = event.venue === selectedVenue;
+    if (!match) {
+      console.log(`⏭️ [EventTimeline] Evento ${event.id} filtrado (venue: "${event.venue}" !== "${selectedVenue}")`);
+    }
+    return match;
   });
+  
+  console.log('✅ [EventTimeline] Eventos após filtro:', filteredEvents.length);
 
   
 
@@ -130,7 +142,8 @@ const EventTimeline = ({
   // Função para obter a cor do local baseado no nome do venue
   const getVenueColor = (venueName: string) => {
     const local = propGetLocalByName ? propGetLocalByName(venueName) : locais.find(l => l.nome === venueName);
-    return local?.color || '#6b7280';
+    console.log('🎨 getVenueColor:', { venueName, local, cor: local?.cor });
+    return local?.cor || local?.color || '#6b7280';
   };
 
   const handleEventClick = (event: Event) => {
@@ -192,6 +205,23 @@ const EventTimeline = ({
     );
   }
 
+  // Formatar intervalo em formato legível
+  const formatInterval = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${minutes} minutos`;
+    }
+    
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (mins === 0) {
+      return hours === 1 ? '1 hora' : `${hours} horas`;
+    }
+    
+    const hourText = hours === 1 ? '1 hora' : `${hours} horas`;
+    return `${hourText} e ${mins} minutos`;
+  };
+
   return (
     <>
       <div className="flex flex-col h-full max-h-[calc(100vh-110px)] overflow-hidden">
@@ -199,13 +229,18 @@ const EventTimeline = ({
           <div className="flex items-center justify-between">
             <h3 className="font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Timeline - {new Date(selectedDate).toLocaleDateString('pt-BR', { 
-                weekday: 'long', 
-                day: '2-digit', 
-                month: 'long' 
-              })}
+              Timeline - {(() => {
+                // Parse manual da data para evitar problemas de timezone
+                const [year, month, day] = selectedDate.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('pt-BR', { 
+                  weekday: 'long', 
+                  day: '2-digit', 
+                  month: 'long' 
+                });
+              })()}
               {selectedVenue && (
-                <span className="text-sm text-gray-600 ml-2">({selectedVenue}) - Intervalo: {interval}min</span>
+                <span className="text-sm text-gray-600 ml-2">({selectedVenue}) - Intervalo: {formatInterval(interval)}</span>
               )}
             </h3>
           </div>
@@ -258,16 +293,22 @@ const EventTimeline = ({
           {/* Events overlay */}
           <div className="absolute top-0 left-0 right-0 pointer-events-none">
             {filteredEvents.map((event) => {
+              debugger
               const startMinutes = timeToMinutes(event.startTime);
               const endMinutes = timeToMinutes(event.endTime);
               const duration = endMinutes - startMinutes;
               
               const [openH = 7, openM = 0] = (venue?.horaAbertura || '07:00').split(':').map(Number);
               const openMinutes = openH * 60 + openM;
-              const topOffset = ((startMinutes - openMinutes) / interval) * slotHeight;
-              const height = (duration / interval) * slotHeight;
+              
+              // Calcular pixels por minuto baseado no intervalo e altura do slot
+              const pixelsPerMinute = slotHeight / interval;
+              
+              // Calcular posição e altura baseado nos minutos exatos
+              const topOffset = (startMinutes - openMinutes) * pixelsPerMinute;
+              const height = duration * pixelsPerMinute;
 
-              const isCurrentlyEditing = editingEventId === event.id;
+              const isCurrentlyEditing = editingEventId !== null && String(editingEventId) === String(event.id);
               const isDisabledEvent = isEditingMode && !isCurrentlyEditing;
               const venueColor = getVenueColor(event.venue);
               
@@ -280,88 +321,93 @@ const EventTimeline = ({
                 ? 'rgb(234 179 8)'
                 : venueColor;
 
-              return (
-                <div
-                  key={event.id}
-                  className={`absolute left-20 right-4 rounded-lg shadow-sm border-l-4 z-10 transition-all cursor-pointer pointer-events-auto border-gray-200 dark:border-gray-700 ${
-                    isCurrentlyEditing 
-                      ? 'ring-2 ring-module-events/100 ring-offset-2'
-                      : 'hover:shadow-md'
-                  }`}
-                  style={{
-                    top: `${topOffset}px`,
-                    height: `${Math.max(height - 4, 48)}px`, // Altura mínima de 48px
-                    borderLeftColor: borderColor,
-                    backgroundColor: backgroundColor
-                  }}
-                  onClick={() => !isDisabledEvent && handleEventClick(event)}
-                >
+               return (
+                 <div
+                   key={event.id}
+                   className={`absolute left-20 right-4 rounded-lg shadow-sm border-l-4 z-10 transition-all cursor-pointer pointer-events-auto border-gray-200 dark:border-gray-700 ${
+                     isCurrentlyEditing 
+                       ? 'ring-2 ring-module-events/100 ring-offset-2'
+                       : 'hover:shadow-md'
+                   }`}
+                   style={{
+                     top: `${topOffset + 3}px`,
+                     height: `${Math.max(height - 7, 36)}px`,
+                     borderLeftColor: borderColor,
+                     backgroundColor: backgroundColor
+                   }}
+                   onClick={() => !isDisabledEvent && handleEventClick(event)}
+                 >
                   {(() => {
                     const textColor = isCurrentlyEditing ? 'text-amber-900' : 'text-white';
                     const iconMuted = isCurrentlyEditing ? 'text-amber-900/90' : 'text-white/90';
                     const secondary = isCurrentlyEditing ? 'text-amber-900/90' : 'text-white/90';
                     return (
-                      <div className={`p-2 h-full overflow-hidden flex ${textColor}`}>
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center gap-1">
+                      <div className={`p-2 h-full overflow-hidden flex items-center ${textColor}`}>
+                        {/* Linha única: Cliente, Esporte | Status, Horário, Ações */}
+                        <div className="flex items-center gap-3 w-full">
+                          {/* Cliente (largura maior, trunca) */}
+                          <div className="flex items-center gap-1 w-48 flex-shrink-0">
                             <User className={`h-3 w-3 ${iconMuted} flex-shrink-0`} />
                             <span className={`font-semibold text-xs truncate ${textColor}`}>{event.client}</span>
                           </div>
-                          <div className={`text-xs font-medium ${secondary}`}>
-                            {event.startTime} - {event.endTime}
+                          
+                          {/* Esporte (largura fixa, trunca ou vazio) */}
+                          <div className="w-32 flex-shrink-0">
+                            <span className={`text-xs truncate block ${secondary}`}>
+                              {event.sport || ''}
+                            </span>
                           </div>
-                          {(height > 60 || height <= 48) && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className={`h-3 w-3 ${iconMuted} flex-shrink-0`} />
-                              <span className={`text-xs truncate ${secondary}`}>{event.venue}</span>
-                            </div>
-                          )}
-                          {event.sport && height > 80 && (
-                            <div className={`text-xs truncate ${secondary}`}>
-                              {event.sport}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <div className={`h-1.5 w-1.5 rounded-full ${
+                          
+                          {/* Espaçador flex */}
+                          <div className="flex-1 min-w-0" />
+                          
+                          {/* Status (largura fixa com bolinha e texto completo) */}
+                          <div className="flex items-center gap-1 w-24 flex-shrink-0">
+                            <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
                               event.status === 'confirmed' ? 'bg-green-500' :
                               event.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
                             }`} />
-                            {height > 60 && (
-                              <span className={`text-xs capitalize ${secondary}`}>
-                                {event.status === 'confirmed' ? 'Confirmado' :
-                                 event.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                              </span>
-                            )}
+                            <span className={`text-xs capitalize truncate ${secondary}`}>
+                              {event.status === 'confirmed' ? 'Confirmado' :
+                               event.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                            </span>
                           </div>
-                        </div>
-                        {isCurrentlyEditing && (
-                          <div className="flex flex-col gap-1 ml-2 flex-shrink-0 justify-start">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteEvent(event.id);
-                              }}
-                              className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash className="h-3 w-3" />
-                            </Button>
-                            {onCancelEdit && (
+                          
+                          {/* Horário (antes dos botões) */}
+                          <div className={`text-xs font-medium ${secondary} w-28 flex-shrink-0`}>
+                            {event.startTime} - {event.endTime}
+                          </div>
+                          
+                          {/* Ações (SEMPRE no final quando em edição) */}
+                          {isCurrentlyEditing && (
+                            <div className="flex flex-row gap-1 flex-shrink-0">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onCancelEdit();
+                                  handleDeleteEvent(event.id);
                                 }}
-                                className="h-5 w-5 p-0"
+                                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
-                                <X className="h-3 w-3" />
+                                <Trash className="h-4 w-4" />
                               </Button>
-                            )}
-                          </div>
-                        )}
+                              {onCancelEdit && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onCancelEdit();
+                                  }}
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })()}

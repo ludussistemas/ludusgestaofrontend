@@ -415,9 +415,9 @@ export function useAgenda() {
 
   // Handlers de eventos
   const handleEventClick = useCallback((reserva: Reserva) => {
-    console.log('Reserva clicada:', reserva);
+    console.log('🎯 [Agenda] Reserva clicada:', reserva);
     // Navegar para página de edição da reserva
-    navigate(`/eventos/reserva/${reserva.id}/editar`);
+    navigate(`/eventos/reserva/${reserva.id}`);
   }, [navigate]);
 
   const handleDataClick = useCallback((data: Date) => {

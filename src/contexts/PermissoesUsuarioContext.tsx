@@ -458,7 +458,15 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
       setPermissoesCarregadas(false);
       isLoadingRef.current = false;
       
-      console.log('🧹 Cache limpo, aguardando Effect Principal recarregar...');
+      console.log('🧹 Cache limpo, forçando recarregamento...');
+      
+      // Se já temos user e filial, forçar carregamento imediato
+      if (user?.id && filialAtual?.id) {
+        console.log('✅ Usuário e filial disponíveis, carregando permissões imediatamente...');
+        fetchUserPermissions();
+      } else {
+        console.log('⏳ Aguardando user/filial ficarem disponíveis no contexto...');
+      }
     };
 
     window.addEventListener('userLoggedIn', handleUserLoggedIn as EventListener);
@@ -466,7 +474,7 @@ export const PermissoesUsuarioProvider: React.FC<{ children: React.ReactNode }> 
     return () => {
       window.removeEventListener('userLoggedIn', handleUserLoggedIn as EventListener);
     };
-  }, [user?.id, filialAtual?.id]);
+  }, [user?.id, filialAtual?.id, fetchUserPermissions]);
 
   const value: PermissoesUsuarioContextType = {
     permissoes,
