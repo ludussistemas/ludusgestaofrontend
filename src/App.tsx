@@ -1,5 +1,6 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
+import { Toaster as ShadcnToaster } from './components/ui/toaster';
 import Bar from './pages/Bar';
 import Events from './pages/Events';
 import Financial from './pages/Financial';
@@ -211,6 +212,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
+        <ShadcnToaster />
       </Router>
     </AuthProvider>
   );

@@ -18,12 +18,17 @@ interface Empresa {
   tenantId: number;
 }
 
+interface LoginResult {
+  success: boolean;
+  message?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   empresa: Empresa | null;
   filiais: Filial[];
   filialAtual: Filial | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => void;
   isAuthenticated: boolean;
   setFilialAtual: (filial: Filial | null) => void;
@@ -89,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Função de login
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     try {
       const response = await api.post<ApiResponse<LoginResponse>>('autenticacao/entrar', { 
         email, 
@@ -153,15 +158,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           detail: { userId: usuario.id, filialId: primeiraFilial?.id } 
         }));
         
-        toast.success('Login realizado com sucesso!');
-        return true;
+        return { success: true, message: 'Login realizado com sucesso!' };
       } else {
-        toast.error(response.message || 'Erro no login');
-        return false;
+        const errorMessage = response.message || 'Erro no login';
+        console.error('❌ Erro no login:', errorMessage);
+        return { success: false, message: errorMessage };
       }
     } catch (error) {
-      console.error('Erro no login:', error);
-      return false;
+      console.error('❌ Erro no login (catch):', error);
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? String(error.message) 
+        : 'Erro ao tentar realizar login. Tente novamente.';
+      return { success: false, message: errorMessage };
     }
   };
 

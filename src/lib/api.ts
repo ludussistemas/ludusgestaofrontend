@@ -293,9 +293,38 @@ class Api {
       clearTimeout(timeoutId);
 
       if (response.status === 401) {
-        console.log('🔒 401 detectado, tentando refresh token...');
+        console.log('🔒 401 detectado na URL:', url);
         
-        // Sempre tentar refresh do token quando receber 401
+        // NÃO tentar refresh se for o próprio endpoint de login ou refresh
+        const isLoginEndpoint = url.includes('/autenticacao/entrar') || url.includes('/login');
+        const isRefreshEndpoint = url.includes('/autenticacao/refresh') || url.includes('/auth/refresh');
+        
+        if (isLoginEndpoint || isRefreshEndpoint) {
+          console.log('⚠️ Erro 401 no endpoint de autenticação, não tentar refresh');
+          // Retornar o JSON do erro da API
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+          }
+          return {
+            success: false,
+            message: 'Credenciais inválidas',
+            data: null
+          } as any;
+        }
+        
+        // Tentar refresh do token apenas se temos um refresh token
+        if (!this.refreshToken) {
+          console.log('⚠️ Sem refresh token disponível, redirecionando para login');
+          this.handleUnauthorized();
+          return {
+            success: false,
+            message: 'Sessão expirada. Faça login novamente.',
+            data: null
+          } as any;
+        }
+        
+        console.log('🔄 Tentando refresh token...');
         const refreshed = await this.refreshAccessToken();
         
         if (refreshed) {
@@ -351,11 +380,14 @@ class Api {
           return this.request(url, options);
         });
         
-        throw {
+        // Retornar estrutura consistente
+        return {
           success: false,
           message: timeoutError.message,
-          data: null
-        };
+          data: null,
+          timestamp: new Date().toISOString(),
+          validationErrors: null
+        } as T;
       }
       
       if (error && error.name === 'TypeError') {
@@ -371,15 +403,28 @@ class Api {
           return this.request(url, options);
         });
         
-        throw {
+        // Retornar estrutura consistente
+        return {
           success: false,
           message: networkError.message,
-          data: null
-        };
+          data: null,
+          timestamp: new Date().toISOString(),
+          validationErrors: null
+        } as T;
       }
       
-      // Outros erros
-      throw error;
+      // Outros erros - retornar estrutura consistente
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : 'Erro desconhecido ao processar requisição';
+      
+      return {
+        success: false,
+        message: errorMessage,
+        data: null,
+        timestamp: new Date().toISOString(),
+        validationErrors: null
+      } as T;
     }
   }
 
@@ -391,7 +436,8 @@ class Api {
 
     try {
       console.log('🔄 Tentando renovar token...');
-      const url = this.buildUrl('auth/refresh');
+      // Usar o mesmo padrão do endpoint de login: autenticacao/
+      const url = this.buildUrl('autenticacao/refresh');
       
       const response = await fetch(url, {
         method: 'POST',
@@ -402,7 +448,7 @@ class Api {
         body: JSON.stringify({ refreshToken: this.refreshToken })
       });
 
-      console.log('📡 Status da resposta do refresh:', response.status);
+      console.log('📡 Status da resposta do refresh:', response.status, response.statusText);
 
       if (response.ok) {
         const data = await response.json();
@@ -418,6 +464,13 @@ class Api {
         }
       } else {
         console.error('❌ Erro HTTP no refresh:', response.status, response.statusText);
+        // Tentar ler a resposta de erro
+        try {
+          const errorData = await response.json();
+          console.error('❌ Erro do servidor:', errorData);
+        } catch (e) {
+          console.error('❌ Não foi possível ler resposta de erro');
+        }
         return false;
       }
     } catch (error) {
@@ -432,13 +485,19 @@ class Api {
     // Limpar tokens
     this.clearTokens();
     
-    // Mostrar notificação
-    this.showWarningNotification('Sessão expirada. Faça login novamente.');
-    
     // Redirecionar para login apenas se não estiver já na página de login
-    if (window.location.pathname !== '/login') {
+    if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
       console.log('🔄 Redirecionando para login...');
-      window.location.href = '/login';
+      
+      // Mostrar notificação apenas se não estamos na página de login
+      this.showWarningNotification('Sessão expirada. Faça login novamente.');
+      
+      // Usar setTimeout para garantir que o toast seja mostrado antes do redirect
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
+    } else {
+      console.log('⚠️ Já está na página de login, não redirecionar');
     }
   }
 

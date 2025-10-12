@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast';
 import { BarChart3, Building2, Calendar, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -22,25 +22,20 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao sistema de gestão esportiva.",
+      const result = await login(email, password);
+      if (result.success) {
+        toast.success('Login realizado com sucesso!', {
+          description: 'Bem-vindo ao sistema de gestão esportiva.',
         });
         navigate('/inicio');
       } else {
-        toast({
-          title: "Erro no login",
-          description: "Email ou senha incorretos.",
-          variant: "destructive",
+        toast.error('Erro no login', {
+          description: result.message || 'Não foi possível realizar o login.',
         });
       }
     } catch (error) {
-      toast({
-        title: "Erro no sistema",
-        description: "Tente novamente em alguns minutos.",
-        variant: "destructive",
+      toast.error('Erro no sistema', {
+        description: 'Tente novamente em alguns minutos.',
       });
     } finally {
       setIsLoading(false);
